@@ -1,0 +1,69 @@
+version: '3.4'
+
+x-common-variables: &common-variables
+  MYSQL_ROOT_PASSWORD: root
+  MYSQL_USER: admin
+  MYSQL_PASSWORD: admin
+  MYSQL_DATABASE: test_db
+  SERVER_PORT: 8000
+  MYSQL_DIALECT: mysql
+  MYSQL_HOST: mysql
+  TOKEN_SECRET: a8db712c5129e52c669d8599d982f071569b425519c638dcfd4ea87f8ba769232336cda2ee4bcd5d13f77b7cfb8d73d01ba0
+  COOKIE_SECRET: dette_er_min_lange_hemmelighet
+
+services:
+  # db
+  mysql:
+    build: ./db
+    restart: unless-stopped
+    environment:
+      <<: *common-variables
+    ports:
+      - 3307:3306
+    volumes:
+      - ./db/:/docker-entrypoint-initdb.d/
+
+  # adminer
+  adminer:
+    depends_on:
+      - mysql
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
+  # # backend
+  # backend:
+  #   # build: ./backend-secure
+  #   build: ./backend
+  #   depends_on:
+  #     - mysql
+  #   expose:
+  #     - 8000
+  #   environment:
+  #     <<: *common-variables
+  #   volumes:
+  #     - ./backend:/app
+  #     # - /app/node_modules # anonymous volume for node_modules only
+  #   links:
+  #     - mysql
+  #   ports:
+  #     - 8000:8000
+
+    # backend
+  backend-v2:
+    # build: ./backend-secure
+    build: ./backend-v2
+    depends_on:
+      - mysql
+    expose:
+      - 8000
+    environment:
+      <<: *common-variables
+    volumes:
+      - ./backend-v2:/app
+      # - /app/node_modules # anonymous volume for node_modules only
+    links:
+      - mysql
+    ports:
+      - 8000:8000
