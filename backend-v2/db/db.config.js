@@ -1,8 +1,8 @@
 const Sequelize = require("sequelize");
 
 // const sequelize = new Sequelize(
-//   "test_db", 
-//   "admin", 
+//   "test_db",
+//   "admin",
 //   "admin", {
 //     dialect: "mysql",
 //     host: "mysql"
@@ -21,58 +21,226 @@ sequelize
   .then( () => console.log("Connection established successfully") )
   .catch( err => console.error("Unable to connect to database: ", err) );
 
+// ==================================
+//    CREATING AUTHENTICATION
+// ==================================
+
 const User = sequelize.define("user_details", {
   id: {
     primaryKey: true,
     type: Sequelize.INTEGER,
-    autoincrement: true
+    autoincrement: true,
+    unique: true
   },
-  username: Sequelize.STRING,
-  email: Sequelize.STRING,
-  first_name: Sequelize.STRING(50),
-  last_name: Sequelize.STRING(50),
-  gender: Sequelize.STRING(10),
-  password: Sequelize.STRING(),
-  status: Sequelize.TINYINT,
+  username: {
+    type: Sequelize.STRING,
+    allowNull: false,
+    unique: true,
+  },
+  email: {
+    type: Sequelize.STRING,
+    allowNull: false,
+    unique: true,
+    validate: {
+      isEmail: true,
+    }
+  },
+  first_name: {
+    type: Sequelize.STRING,
+    allowNull: false,
+    validate: {
+      len: [5, 40],
+    }
+  },
+  last_name: {
+    type: Sequelize.STRING,
+    allowNull: false,
+    validate: {
+      len: [5, 40],
+    }
+  },
+  gender: {
+    type: Sequelize.STRING,
+    allowNull: false,
+    validate: {
+      isIn: [['Male', 'Female']]
+    }
+
+  },
+  password: {
+    type: Sequelize.STRING,
+    validate: {
+      min: 8,
+      max: 50
+    }
+  }
 })
 
 const Role = sequelize.define("role", {
   id: {
     type: Sequelize.INTEGER,
-    primaryKey: true
+    primaryKey: true,
+    autoincrement: true,
+    unique: true
   },
   name: {
-    type: Sequelize.STRING
+    type: Sequelize.STRING,
+    allowNull: false,
+    unique: true
+  },
+  level: {
+    type: Sequelize.INTEGER,
+    validate:{
+      min: 1,
+      max: 3
+    }
   }
-})
+});
 
-Role.hasMany(User, {as: "users"})
+Role.hasMany(User, {as: "users"});
 
 User.belongsTo(Role, {
   foreignKey: "roleId",
   as: "role"
 });
 
-// USE FOR TESTING, AND INITIALIZATIOn
+// ==================================
+//    CREATING ENTERTAINMENT
+// ==================================
 
-// Role.create({
-//   "roleId": 1,
-//   "name": "User"
-// })
+const Actor = sequelize.define("actor", {
+  id: {
+    type: Sequelize.INTEGER,
+    primaryKey: true,
+    autoincrement: true,
+    unique: true
+  },
+  first_name: {
+    type: Sequelize.STRING,
+    allowNull: false,
+    unique: true,
+  },
+  last_name: {
+    type: Sequelize.STRING,
+    allowNull: false,
+    unique: true,
+  },
+  bio: {
+    type: Sequelize.STRING,
+    validate:{
+      len: [2, 100]
+    }
+  },
+  birthdate: {
+    type: Sequelize.DATE,
+    validate:{
+      isAfter: "1900-01-01",
+    }
+  }
+});
 
-// Role.create({
-//   "roleId": 2,
-//   "name": "Moderator"
-// })
+const Entertainment = sequelize.define("entertainment", {
+  id: {
+    type: Sequelize.INTEGER,
+    primaryKey: true,
+    autoincrement: true,
+    unique: true
+  },
+  title: {
+    type: Sequelize.STRING,
+    allowNull: false,
+    unique: true,
+  },
+  poster: {
+    type: Sequelize.STRING,
+    allowNull: false,
+    unique: true,
+  },
+  description: {
+    type: Sequelize.STRING,
+    validate:{
+      len: [2, 100]
+    }
+  },
+  releasedate: {
+    type: Sequelize.DATE,
+    validate:{
+      isAfter: "1900-01-01",
+    }
+  },
+  trailer: {
+    type: Sequelize.STRING
+  }
+});
 
-// Role.create({
-//   "roleId": 3,
-//   "name": "Admin"
-// })
+const Language = sequelize.define("language", {
+  id: {
+    type: Sequelize.INTEGER,
+    primaryKey: true,
+    autoincrement: true
+  },
+  language: {
+    type: Sequelize.STRING
+  }
+});
+
+Language.hasMany(Entertainment, {as: "entertainments"});
+
+Entertainment.belongsTo(Language, {
+  foreignKey: "languageId",
+  as: "language"
+});
+
+// USE FOR TESTING, AND INITIALIZATION
+// try {
+
+// }
+// catch(err) {
+//   console.error(err, "Cant create test-data")
+// }
 
 sequelize.sync({fouce: true})
 .then( () => {
-  console.log("Database & tables created!") 
+  // Role.create({
+  //   "id": 1,
+  //   "name": "User",
+  //   "level": 1
+  // });
+  // Role.create({
+  //   "id": 2,
+  //   "name": "Moderator",
+  //   "level": 2
+  // });
+  // Role.create({
+  //   "id": 3,
+  //   "name": "Admin",
+  //   "level": 3
+  // });
+
+  // Actor.create({
+  //   "id": 1,
+  //   "first_name": "Stian",
+  //   "last_name": "Martinsen",
+  //   "bio": "HI' im me 🔥",
+  //   "birthdate": Date.now()
+  // });
+  // User.create({
+  //   "username": "admin",
+  //   "email": "admin@gmail.com",
+  //   "first_name": "stian",
+  //   "last_name": "martinsen",
+  //   "gender": "Male",
+  //   // "password_in_plane_text": "admin",
+  //   "password": "d8da308ccd0cf4c331521fc8f8771507e65e9981de1959e0c76e035291024b1e6b18b9623f751acb470e2b38506066e216a5259f530817674f19f24501ca10342536df7bc27901001890b87e429007d6e5e4a937776d44145a9df54631fde19a6aa5baf9c9fe",
+  //   "createdAt": Date.now(),
+  //   "updatedAt": Date.now(),
+  //   "roleId": 3
+  // });
+  // Language.create({
+  //   id: 1,
+  //   language: "English"
+  // })
+  console.log("Database & tables created!")
 });
 
-module.exports = {sequelize, User, Role};
+module.exports = {sequelize, User, Role, Actor, Entertainment, Language};

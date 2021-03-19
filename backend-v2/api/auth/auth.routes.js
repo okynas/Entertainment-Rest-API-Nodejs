@@ -1,6 +1,5 @@
 const crypto = require("crypto");
-const { Op } = require("sequelize");
-const {authentication, userExist, alreadyLoggedIn, createAccessToken, findUser, isStaff, findUserAndLogIn} = require("../middleware")
+const {authentication, userExist, alreadyLoggedIn, createAccessToken, findUser, isStaff, findUserAndLogIn, checkUserRole} = require("../middleware")
 const express = require("express");
 const router = express.Router();
 const sequelize = require("../../db/db.config");
@@ -9,33 +8,30 @@ const User = sequelize.User;
 const Role = sequelize.Role;
 
 
-router.get("/", authentication, async (req, res, next) => {
-  const username = jwt.verify(req.session.token, process.env.TOKEN_SECRET).username;
-  const staff = await isStaff(username);
+router.get("/allUsers", authentication, isStaff, async (req, res, next) => {
 
-  var allUsers = undefined;
-  var message = "Getting your user";
+  var allUsers = await User.findAll({
+    attributes: { exclude: ["password"] },
+    include: ["role"]
+  });
 
-  if (staff) {
-    allUsers = await User.findAll();
-    message = "Showing all users";
-  }
-
-  allUsers = await findUser(username)
-
-  return res.json({
-    message: message,
+  return res.status(200).json({
+    status: 200,
+    message: "Showing all users",
     allUsers
   })
+
 });
 
 // ####################################
 // Getting Roles
 // ####################################
 
-router.get("/roles", async (req, res, next) => {
+router.get("/roles", authentication, isStaff, async (req, res, next) => {
   const allRoles = await Role.findAll();
-  return res.json({
+  return res.status(200).json({
+    status: 200,
+    message: "Showing all roles",
     roles: allRoles
   })
 });
@@ -43,35 +39,30 @@ router.get("/roles", async (req, res, next) => {
 // ####################################
 // Authenticated Route / Private route
 // ####################################
-router.get("/private", (req, res, next) => {
 
-  return res.json(req.session)
+router.get("/private", authentication, async (req, res, next) => {
 
-  // const fullUser = await User.findAll({
-  //   where: {
-  //     username: "okynas"
-  //   },
-  //   attributes: {
-  //     exclude: ["password"]
-  //   },
-  //   include: ["role"]
-  // })
+  const loggedInUser = jwt.verify(req.session.token, process.env.TOKEN_SECRET).username;
+  const fullUser = await User.findOne({
+    where: { username: loggedInUser },
+    attributes: { exclude: ["password"] },
+    include: ["role"]
+  })
 
-  // return res.status(200).json({
-  //   status: 200,
-  //   message: "You have come to the private route 🙊",
-  //   token: req.session.token,
-  //   user: fullUser[0]
-  // })
+  return res.status(200).json({
+    status: 200,
+    message: "You have come to the private route 🙊",
+    user: fullUser
+  })
 })
 
 // ####################################
 // Login
 // ####################################
-router.post("/login", userExist, alreadyLoggedIn, async (req, res, next) => {
-  
+router.post("/login", alreadyLoggedIn, userExist, async (req, res, next) => {
+
   const userToCheck = await findUserAndLogIn(req.body.username, req.body.email, req.body.password);
-  const token = createAccessToken(userToCheck); 
+  const token = createAccessToken(userToCheck);
 
   req.session.token = token;
 
@@ -83,6 +74,14 @@ router.post("/login", userExist, alreadyLoggedIn, async (req, res, next) => {
     });
 });
 
+
+// router.get("/abc", (req, res, next) => {
+//   res.status(200).json({
+//     password: "admin",
+//     hash: crypto.pbkdf2Sync("admin", "salt", 100000, 102, "sha512").toString("hex")
+//   })
+// })
+
 // ####################################
 // Signup
 // ####################################
@@ -90,9 +89,9 @@ router.post("/signup", async (req, res, next) => {
   const existingUser = await findUser(req.body.username)
 
   if (existingUser) {
-    return res.status(401).json({
-      status: 401,
-      status_type: "Unauthorized",
+    return res.status(403).json({
+      status: 403,
+      status_type: "Forbidden",
       message: "User already exist",
     })
   }
@@ -105,7 +104,6 @@ router.post("/signup", async (req, res, next) => {
     "last_name": req.body.last_name,
     "gender": req.body.gender,
     "password": password.toString("hex"),
-    "status": 1,
     "createdAt": Date.now(),
     "updatedAt": Date.now(),
     "roleId": 1
@@ -133,6 +131,103 @@ router.post("/logout", (req, res, next) => {
     message: "Logging out failed!"
   })
 
-})
+});
+
+router.put("/role", authentication, isStaff, async (req, res, next) => {
+
+  const userRoleCheck = checkUserRole(jwt.verify(req.session.token, process.env.TOKEN_SECRET).username, req.body.role);
+
+  if (userRoleCheck !== NaN && userRoleCheck > req.body.level) {
+
+    const roleExist = await Role.findOne({ where: { name : req.body.role} });
+
+    if (roleExist) {
+      await Role.update({ name: req.body.newName, level: req.body.newLevel }, {
+        where: {
+          name: req.body.role
+        }
+      });
+
+      return res.status(201).json({
+        status: 201,
+        message: "Successfully updated role",
+        role: req.body.role
+      })
+    }
+
+    return res.status(403).json({
+      status: 403,
+      message: "Unable to update role, role does not exist",
+    })
+
+
+  }
+
+  return res.status(401).json({
+    status: 401,
+    message: "Not permission to update role"
+  })
+
+});
+
+router.post("/role", authentication, isStaff, async (req, res, next) => {
+
+  const userRoleCheck = checkUserRole(jwt.verify(req.session.token, process.env.TOKEN_SECRET).username, req.body.role);
+
+  if (userRoleCheck !== NaN && userRoleCheck > req.body.level) {
+    const roleExist = await Role.findOne({ where: { name : req.body.role} });
+
+    if (!roleExist) {
+      await Role.create({ name: req.body.role, level: req.body.level});
+      return res.status(201).json({
+        status: 201,
+        message: `Successfully Created Role: ${req.body.role}`,
+      })
+    }
+
+    return res.status(403).json({
+      status: 403,
+      message: "Unable to create role, role already exist",
+    })
+
+  }
+
+  return res.status(401).json({
+    status: 401,
+    message: "Not permission to create role"
+  })
+
+
+});
+
+router.delete("/role", authentication, isStaff, async (req, res, next) => {
+
+  const userRoleCheck = await checkUserRole(jwt.verify(req.session.token, process.env.TOKEN_SECRET).username, req.body.role);
+
+  if (userRoleCheck !== NaN) {
+
+    const roleExist = await Role.findOne({ where: { name : req.body.role} });
+
+    if (roleExist) {
+      await Role.destroy({ where: {name: req.body.role} });
+      return res.status(201).json({
+        status: 201,
+        message: `Successfully Deleted Role: ${req.body.role}`,
+      })
+    }
+
+    return res.status(403).json({
+      status: 403,
+      message: "Unable to delete role, role does not exist",
+    })
+
+  }
+
+  return res.status(401).json({
+    status : 401,
+    message: "Not Permission to delete role"
+  })
+
+});
 
 module.exports = router;

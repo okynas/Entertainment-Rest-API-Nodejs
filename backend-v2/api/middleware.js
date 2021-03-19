@@ -16,6 +16,7 @@ module.exports.authentication = function(req, res, next) {
   if (req.session.token) {
     next();
   }
+
   else {
     return res.status(401).json({
       status: 401,
@@ -36,21 +37,23 @@ module.exports.alreadyLoggedIn = async function(req, res, next) {
   next();
 }
 
-module.exports.isStaff = async function(username) {
+module.exports.isStaff = async function(req, res, next) {
 
   const userToCheck = await User.findOne({
-    where: {
-      [Op.and] : [
-        {username: username},
-      ]
-    },
+    where: {username: jwt.verify(req.session.token, process.env.TOKEN_SECRET).username},
     include: ["role"]
   })
 
   const rolleId = userToCheck["role"]["id"];
 
-  if (rolleId >= 2) return true
-  return false;
+  if (rolleId >= 2) {
+    next();
+  } else {
+    return res.status(401).json({
+      status: 401,
+      message: "Unauthorized"
+    })
+  }
 }
 
 module.exports.userExist = async function(req, res, next) {
@@ -81,7 +84,8 @@ module.exports.userExist = async function(req, res, next) {
 module.exports.findUser = async function(username) {
   const userToCheck = await User.findOne({
     where: { username: username },
-    attributes: { exclude: ["password"] }
+    attributes: { exclude: ["password"] },
+    include: ["role"]
   })
 
   return userToCheck;
@@ -105,38 +109,30 @@ module.exports.findUserAndLogIn = async function(username, email, password) {
   return userToCheck.username;
 }
 
-// module.exports.signUp = async function(username, email, first_name, last_name, gender, pwd, req, res, next) {
-//   const password = crypto.pbkdf2Sync(pwd, "salt", 100000, 102, "sha512")
+module.exports.checkUserRole = async function(currentUser, userToDelete) {
 
-//   const existingUser = await User.findOne({
-//     where: {
-//       [Op.and] : [
-//         {username: username},
-//         {email: email},
-//         {password: password.toString("hex")},
-//       ]
-//     }
-//   })
+  const thisUser = await User.findOne({
+    where: {username: currentUser},
+    include: ["role"],
+  });
 
-//   if (existingUser) {
-//     return res.status(401).json({
-//       status: 401,
-//       status_type: "Unauthorized",
-//       message: "User already exist",
-//     })
-//   }
+  const roleOfCurrentUser = thisUser["role"]["level"]; // => 3 if admin
+  // console.log("CURRENT USER ROLE LEVEL IS ===", typeof roleOfCurrentUser)
 
-//   return null;
+  const {name, level} = await Role.findOne({
+    where: {name: userToDelete},
+    attributes: ['name', 'level']
+  });
 
-//   // const createdUser = User.create({
-//   //   "username": username,
-//   //   "email": email,
-//   //   "first_name": first_name,
-//   //   "last_name": last_name,
-//   //   "gender": gender,
-//   //   "password": password.toString("hex"),
-//   //   "status": 1
-//   // })
+  // console.log("LEVEL OF USER TO DELETE IS ===", typeof level)
 
-//   // return createdUser;
-// }
+  if (roleOfCurrentUser >= level) {
+    // console.log("THIS IS GETTING RUN!!!")
+    return roleOfCurrentUser;
+  } else {
+    return null;
+  }
+
+  // console.log(thisUser);
+
+}
