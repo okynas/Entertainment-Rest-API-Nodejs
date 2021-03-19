@@ -1,6 +1,6 @@
 const express = require("express");
 const app = express();
-// const dotend = require("dotenv").config();
+require('dotenv').config()
 
 const bodyParser = require("body-parser");
 const session = require("express-session")
@@ -11,13 +11,14 @@ const session = require("express-session")
 
 // require("./db/db.config").sequelize;
 
+// app.set('trust proxy', 1)
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
-app.use(session({
-  secret: 'keyboard cat',
+app.use(session({ 
+  secret: process.env.COOKIE_SECRET,
   resave: false,
-  saveUninitialized: true,
-  cookie: { secure: true, maxAge: 60000 }
+  saveUninitialized: true, 
+  cookie: { maxAge: 60000 }
 }))
 
 const PORT = process.env.SERVER_PORT || 8001;

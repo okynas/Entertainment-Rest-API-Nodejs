@@ -1,6 +1,8 @@
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
+require('dotenv').config();
+
 const sequelize = require("../db/db.config");
 const User = sequelize.User;
 const Role = sequelize.Role;
@@ -34,7 +36,7 @@ module.exports.alreadyLoggedIn = async function(req, res, next) {
   next();
 }
 
-module.exports.checkRole = async function(username) {
+module.exports.isStaff = async function(username) {
 
   const userToCheck = await User.findOne({
     where: {
@@ -45,7 +47,10 @@ module.exports.checkRole = async function(username) {
     include: ["role"]
   })
 
-  return {roleId: userToCheck["role"]["id"], roleName: userToCheck["role"]["name"]};
+  const rolleId = userToCheck["role"]["id"];
+
+  if (rolleId >= 2) return true
+  return false;
 }
 
 module.exports.userExist = async function(req, res, next) {
@@ -59,7 +64,7 @@ module.exports.userExist = async function(req, res, next) {
         {password: key.toString("hex")},
       ]
     }
-  })
+  });
 
   if (userToCheck !== null) {
     next();
@@ -73,7 +78,16 @@ module.exports.userExist = async function(req, res, next) {
   }
 }
 
-module.exports.findUser = async function(username, email, password) {
+module.exports.findUser = async function(username) {
+  const userToCheck = await User.findOne({
+    where: { username: username },
+    attributes: { exclude: ["password"] }
+  })
+
+  return userToCheck;
+}
+
+module.exports.findUserAndLogIn = async function(username, email, password) {
   const key = crypto.pbkdf2Sync(password, "salt", 100000, 102, "sha512")
   const userToCheck = await User.findOne({
     where: {
@@ -88,7 +102,7 @@ module.exports.findUser = async function(username, email, password) {
     }
   })
 
-  return userToCheck;
+  return userToCheck.username;
 }
 
 // module.exports.signUp = async function(username, email, first_name, last_name, gender, pwd, req, res, next) {

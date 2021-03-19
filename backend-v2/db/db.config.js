@@ -1,13 +1,20 @@
 const Sequelize = require("sequelize");
 
-const sequelize = new Sequelize(
-  "test_db", 
-  "admin", 
-  "admin", {
-    dialect: "mysql",
-    host: "mysql"
-  }
-);
+// const sequelize = new Sequelize(
+//   "test_db", 
+//   "admin", 
+//   "admin", {
+//     dialect: "mysql",
+//     host: "mysql"
+//   }
+// );
+
+// const sequelize = new Sequelize("sqlite::memory:");
+// Option 2: Passing parameters separately (sqlite)
+const sequelize = new Sequelize({
+  dialect: 'sqlite',
+  storage: '../database.sqlite'
+});
 
 sequelize
   .authenticate()
@@ -45,6 +52,23 @@ User.belongsTo(Role, {
   foreignKey: "roleId",
   as: "role"
 });
+
+// USE FOR TESTING, AND INITIALIZATIOn
+
+// Role.create({
+//   "roleId": 1,
+//   "name": "User"
+// })
+
+// Role.create({
+//   "roleId": 2,
+//   "name": "Moderator"
+// })
+
+// Role.create({
+//   "roleId": 3,
+//   "name": "Admin"
+// })
 
 sequelize.sync({fouce: true})
 .then( () => {
