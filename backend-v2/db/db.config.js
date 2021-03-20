@@ -60,7 +60,7 @@ const User = sequelize.define("user_details", {
     }
   },
   gender: {
-    type: Sequelize.STRING,
+    type: Sequelize.ENUM('Male', 'Frmale'),
     allowNull: false,
     validate: {
       isIn: [['Male', 'Female']]
@@ -84,9 +84,12 @@ const Role = sequelize.define("role", {
     unique: true
   },
   name: {
-    type: Sequelize.STRING,
+    type: Sequelize.ENUM('Admin', 'Moderator', 'User'),
     allowNull: false,
-    unique: true
+    unique: true,
+    validate: {
+      isIn: [['Admin', 'Moderator', 'User']]
+    }
   },
   level: {
     type: Sequelize.INTEGER,
@@ -97,7 +100,9 @@ const Role = sequelize.define("role", {
   }
 });
 
-Role.hasMany(User, {as: "users"});
+Role.hasMany(User, {
+  as: "users"
+});
 
 User.belongsTo(Role, {
   foreignKey: "roleId",
@@ -184,12 +189,46 @@ const Language = sequelize.define("language", {
   }
 });
 
-Language.hasMany(Entertainment, {as: "entertainments"});
+const Genre = sequelize.define("genre", {
+  id: {
+    type: Sequelize.INTEGER,
+    primaryKey: true,
+    autoincrement: true
+  },
+  genre: {
+    type: Sequelize.STRING
+  }
+});
+
+const Entertainmens_has_actors = sequelize.define("entertainmens_has_actors", {
+  id: {
+      type: Sequelize.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+  },
+  role: {
+      type: Sequelize.STRING
+  }
+});
+
+// User.belongsToMany(Role, { as: 'Roles', through: { model: UserRole, unique: false }, foreignKey: 'user_id' });
+
+Entertainment.belongsToMany(Actor, { as: 'Actors', through: {model: Entertainmens_has_actors, unique: false}, foreignKey: 'actor_id'});
+Actor.belongsToMany(Entertainment, { as: 'Entertainments', through: {model: Entertainmens_has_actors, unique: false}, foreignKey: 'entertainment_id'});
 
 Entertainment.belongsTo(Language, {
   foreignKey: "languageId",
   as: "language"
 });
+
+Language.hasMany(Entertainment, {as: "entertainmentsL"});
+
+Entertainment.belongsTo(Genre, {
+  foreignKey: "genreId",
+  as: "genre"
+});
+
+Genre.hasMany(Entertainment, {as: "entertainmentsG"});
 
 // USE FOR TESTING, AND INITIALIZATION
 // try {
@@ -224,6 +263,7 @@ sequelize.sync({fouce: true})
   //   "bio": "HI' im me 🔥",
   //   "birthdate": Date.now()
   // });
+
   // User.create({
   //   "username": "admin",
   //   "email": "admin@gmail.com",
@@ -237,10 +277,35 @@ sequelize.sync({fouce: true})
   //   "roleId": 3
   // });
   // Language.create({
-  //   id: 1,
-  //   language: "English"
+  //   "id": 1,
+  //   "language": "English"
   // })
+
+  // Genre.create({
+  //   "id": 1,
+  //   "genre": "Action"
+  // })
+
+  // Entertainment.create({
+  //   "id": 1,
+  //   "title": "Game of Thrones",
+  //   "poster": "POSTER",
+  //   "description": "A very good show",
+  //   "releasedate": Date.now(),
+  //   "trailer": "https://www.google.com",
+  //   "languageId": 1,
+  //   "genreId": 1,
+  // });
+
+
+  // Entertainmens_has_actors.create({
+  //   "id": 1,
+  //   "entertainment_id": 1,
+  //   "actor_id": 1,
+  //   "role": "Jon Snow"
+  // })
+
   console.log("Database & tables created!")
 });
 
-module.exports = {sequelize, User, Role, Actor, Entertainment, Language};
+module.exports = {sequelize, User, Role, Actor, Entertainment, Language, Entertainmens_has_actors, Genre};
