@@ -182,6 +182,7 @@ const Entertainment = sequelize.define("entertainment", {
   timestamps: false
 });
 
+
 const Language = sequelize.define("language", {
   id: {
     type: Sequelize.INTEGER,
@@ -208,11 +209,20 @@ const Genre = sequelize.define("genre", {
   timestamps: false
 });
 
-const Entertainmens_has_actors = sequelize.define("entertainmens_has_actors", {
-  id: {
-      type: Sequelize.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
+const Entertainment_has_actors = sequelize.define("entertainment_has_actors", {
+  actorId: {
+    type: Sequelize.INTEGER,
+    references: {
+      model: Actor,
+      key: 'id'
+    }
+  },
+  entertainmentId:{
+    type: Sequelize.INTEGER,
+    references: {
+      model: Entertainment,
+      key: 'id'
+    }
   },
   role: {
       type: Sequelize.STRING
@@ -221,32 +231,84 @@ const Entertainmens_has_actors = sequelize.define("entertainmens_has_actors", {
   timestamps: false
 });
 
+const Entertainment_has_genre = sequelize.define("entertainment_has_genres", {
+  entertainmentId:{
+    type: Sequelize.INTEGER,
+    references: {
+      model: Entertainment,
+      key: 'id'
+    }
+  },
+  genreId:{
+    type: Sequelize.INTEGER,
+    references: {
+      model: Genre,
+      key: 'id'
+    }
+  },
+}, {
+  timestamps: false
+});
+
 const Film = sequelize.define("film", {
-  id: {
+  entertainmentId: {
     type: Sequelize.INTEGER,
     primaryKey: true,
-    autoIncrement: true
   },
   duration: {
     type: Sequelize.INTEGER,
+  },
+}, {
+  timestamps: false
+});
+
+const Show = sequelize.define("show", {
+  entertainmentId: {
+    type: Sequelize.INTEGER,
+    primaryKey: true,
+  },
+}, {
+  timestamps: false
+});
+
+const Season = sequelize.define("seasons", {
+  seasonNumber: {
+    type: Sequelize.INTEGER,
+    primaryKey: true
+  },
+  title: {
+    type: Sequelize.STRING
+  },
+  releasedate: {
+    type: Sequelize.DATE
+  },
+  description: {
+    type: Sequelize.STRING
+  },
+  showId: {
+    type: Sequelize.INTEGER
   }
 }, {
   timestamps: false
-})
+});
 
 // ======== >= <= ========
 //        RELATIONS
 // ======== >= <= ========
-Entertainment.belongsToMany(Actor, { as: 'Actors', through: {model: Entertainmens_has_actors, unique: false}, foreignKey: 'actorId'});
-Actor.belongsToMany(Entertainment, { as: 'Entertainments', through: {model: Entertainmens_has_actors, unique: false}, foreignKey: 'entertainmentId'});
-Entertainment.belongsTo(Language, {foreignKey: "languageId", as: "language"});
-Language.hasMany(Entertainment, {as: "entertainmentsL"});
-Entertainment.belongsTo(Genre, {foreignKey: "genreId", as: "genre"});
-Genre.hasMany(Entertainment, {as: "entertainmentsG"});
+Entertainment.belongsToMany(Actor, { as: 'Actors', through: {model: Entertainment_has_actors, unique: false}, foreignKey: 'actorId'});
+Actor.belongsToMany(Entertainment, { as: 'Entertainment', through: {model: Entertainment_has_actors, unique: false}, foreignKey: 'entertainmentId'});
 
-// Film.belongsTo(Entertainment, {foreignKey: "", as: "films"});
-// Entertainment.belongsTo(Genre, {foreignKey: "genreId", as: "genre"});
-// Genre.hasOne(Entertainment, {as: "entertainmentsG"});
+Entertainment.belongsToMany(Genre, { as: 'Genre', through: {model: Entertainment_has_genre, unique: false}, foreignKey: 'genreId'});
+Genre.belongsToMany(Entertainment, { as: 'Entertainment', through: {model: Entertainment_has_genre, unique: false}, foreignKey: 'entertainmentId'});
+
+Entertainment.belongsTo(Language, {foreignKey: "languageId", as: "language"});
+Language.hasMany(Entertainment, {as: "entertainmentLanguage"});
+Film.belongsTo(Entertainment, {foreignKey: "entertainmentId", as: "entertainmentFilm"});
+Entertainment.hasOne(Film);
+Show.belongsTo(Entertainment, {foreignKey: "entertainmentId", as: "entertainmentShow"});
+Entertainment.hasOne(Show);
+Season.belongsTo(Show, {foreignKey: "showId", as: "showSeason"});
+Show.hasOne(Season);
 
 sequelize.sync({fouce: true})
 .then( () => {
@@ -294,7 +356,12 @@ sequelize.sync({fouce: true})
   // Genre.create({
   //   "id": 1,
   //   "genre": "Action"
-  // })
+  // });
+
+  // Genre.create({
+  //   "id": 2,
+  //   "genre": "Comedy"
+  // });
 
   // Entertainment.create({
   //   "id": 1,
@@ -307,20 +374,34 @@ sequelize.sync({fouce: true})
   //   "genreId": 1,
   // });
 
+  // Film.create({
+  //   entertainmentId: 1,
+  //   duration: 100
+  // });
 
-  // Entertainmens_has_actors.create({
-  //   "id": 1,
+  // Show.create({entertainmentId: 1});
+
+  // Season.create({
+  //   seasonNumber: 1,
+  //   title: "Season 1",
+  //   releasedate: Date.now(),
+  //   description: "beskrivelse",
+  //   showId: 1
+  // });
+
+  // Entertainment_has_actors.create({
   //   "entertainmentId": 1,
   //   "actorId": 1,
   //   "role": "Jon Snow"
-  // })
+  // });
 
-  // Film.create({
-  //   id: 1,
-  //   duration: 100
-  // })
+  // Entertainment_has_genre.create({
+  //   "entertainmentId": 1,
+  //   "genreId": 1,
+  // });
+
 
   console.log("Database & tables created!")
 });
 
-module.exports = {sequelize, User, Role, Actor, Entertainment, Language, Entertainmens_has_actors, Genre, Film};
+module.exports = {sequelize, User, Role, Actor, Entertainment, Language, Entertainment_has_actors, Genre, Film, Show, Season};

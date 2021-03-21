@@ -26,10 +26,7 @@ app.use(session({
   saveUninitialized: true,
   cookie: {
     maxAge: 60000,
-    httpOnly: true,
-    secure: true,
-    domain: "localhost",
-    path: '/'
+    // secure: true,
   }
 }));
 
