@@ -142,6 +142,8 @@ const Actor = sequelize.define("actor", {
       isAfter: "1900-01-01",
     }
   }
+}, {
+  timestamps: false
 });
 
 const Entertainment = sequelize.define("entertainment", {
@@ -176,6 +178,8 @@ const Entertainment = sequelize.define("entertainment", {
   trailer: {
     type: Sequelize.STRING
   }
+}, {
+  timestamps: false
 });
 
 const Language = sequelize.define("language", {
@@ -187,6 +191,8 @@ const Language = sequelize.define("language", {
   language: {
     type: Sequelize.STRING
   }
+}, {
+  timestamps: false
 });
 
 const Genre = sequelize.define("genre", {
@@ -198,6 +204,8 @@ const Genre = sequelize.define("genre", {
   genre: {
     type: Sequelize.STRING
   }
+}, {
+  timestamps: false
 });
 
 const Entertainmens_has_actors = sequelize.define("entertainmens_has_actors", {
@@ -209,34 +217,36 @@ const Entertainmens_has_actors = sequelize.define("entertainmens_has_actors", {
   role: {
       type: Sequelize.STRING
   }
+}, {
+  timestamps: false
 });
 
-// User.belongsToMany(Role, { as: 'Roles', through: { model: UserRole, unique: false }, foreignKey: 'user_id' });
+const Film = sequelize.define("film", {
+  id: {
+    type: Sequelize.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  duration: {
+    type: Sequelize.INTEGER,
+  }
+}, {
+  timestamps: false
+})
 
-Entertainment.belongsToMany(Actor, { as: 'Actors', through: {model: Entertainmens_has_actors, unique: false}, foreignKey: 'actor_id'});
-Actor.belongsToMany(Entertainment, { as: 'Entertainments', through: {model: Entertainmens_has_actors, unique: false}, foreignKey: 'entertainment_id'});
-
-Entertainment.belongsTo(Language, {
-  foreignKey: "languageId",
-  as: "language"
-});
-
+// ======== >= <= ========
+//        RELATIONS
+// ======== >= <= ========
+Entertainment.belongsToMany(Actor, { as: 'Actors', through: {model: Entertainmens_has_actors, unique: false}, foreignKey: 'actorId'});
+Actor.belongsToMany(Entertainment, { as: 'Entertainments', through: {model: Entertainmens_has_actors, unique: false}, foreignKey: 'entertainmentId'});
+Entertainment.belongsTo(Language, {foreignKey: "languageId", as: "language"});
 Language.hasMany(Entertainment, {as: "entertainmentsL"});
-
-Entertainment.belongsTo(Genre, {
-  foreignKey: "genreId",
-  as: "genre"
-});
-
+Entertainment.belongsTo(Genre, {foreignKey: "genreId", as: "genre"});
 Genre.hasMany(Entertainment, {as: "entertainmentsG"});
 
-// USE FOR TESTING, AND INITIALIZATION
-// try {
-
-// }
-// catch(err) {
-//   console.error(err, "Cant create test-data")
-// }
+// Film.belongsTo(Entertainment, {foreignKey: "", as: "films"});
+// Entertainment.belongsTo(Genre, {foreignKey: "genreId", as: "genre"});
+// Genre.hasOne(Entertainment, {as: "entertainmentsG"});
 
 sequelize.sync({fouce: true})
 .then( () => {
@@ -300,12 +310,17 @@ sequelize.sync({fouce: true})
 
   // Entertainmens_has_actors.create({
   //   "id": 1,
-  //   "entertainment_id": 1,
-  //   "actor_id": 1,
+  //   "entertainmentId": 1,
+  //   "actorId": 1,
   //   "role": "Jon Snow"
+  // })
+
+  // Film.create({
+  //   id: 1,
+  //   duration: 100
   // })
 
   console.log("Database & tables created!")
 });
 
-module.exports = {sequelize, User, Role, Actor, Entertainment, Language, Entertainmens_has_actors, Genre};
+module.exports = {sequelize, User, Role, Actor, Entertainment, Language, Entertainmens_has_actors, Genre, Film};
