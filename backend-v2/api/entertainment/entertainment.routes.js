@@ -290,7 +290,7 @@ router.get("/show", async (req, res, next) => {
       },
       include: [{
        model: Entertainment,
-       as: 'entertainmentShow',
+       as: 'show',
        attributes: ['id', 'title', 'poster', 'description', 'releasedate', 'trailer'],
        include: [
         {
@@ -300,7 +300,7 @@ router.get("/show", async (req, res, next) => {
           through: {
             attributes: ['role'],
             as: "roleInShow"
-          }
+          },
         },
         {
           model: Genre,
@@ -313,13 +313,19 @@ router.get("/show", async (req, res, next) => {
         },
         {
           model: Language,
-          as: 'language'
-        }
+          as: 'language',
+          attributes: ['language']
+        },
+        // {
+        //   model: Season,
+        //   as: 'seasonInShow'
+        // }
       ],
-      }]
+      },
+     ]
     });
 
-    if (!shows) throw "Film not found"
+    if (!shows) throw new Error("Film not found");
 
     return res.status(200).json({
       staus: 200,
@@ -339,8 +345,31 @@ router.get("/show", async (req, res, next) => {
 
 router.get("/season", async (req, res, next) => {
   try {
-
-    const season = await Season.findAll();
+    const season = await Season.findAll({
+      attributes: ['title', 'seasonNumber', 'releasedate', 'description'],
+      include: [
+        {
+          model: Show,
+          as: "shows",
+          // through: {
+            // attributes: [],
+            // as: "genreInShow"
+          // },
+          include: {
+            model: Entertainment,
+            as: 'shows',
+            attributes: ['id', 'title', 'poster', 'description', 'releasedate', 'trailer'],
+            include: [
+              {
+                model: Language,
+                as: 'language',
+                attributes: ['language']
+              }
+            ]
+          }
+        }
+      ]
+    });
 
     if (!season) throw "Season not found"
 

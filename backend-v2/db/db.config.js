@@ -266,6 +266,10 @@ const Show = sequelize.define("show", {
   entertainmentId: {
     type: Sequelize.INTEGER,
     primaryKey: true,
+    references: {
+      model: Entertainment,
+      key: 'id'
+    }
   },
 }, {
   timestamps: false
@@ -285,8 +289,19 @@ const Season = sequelize.define("seasons", {
   description: {
     type: Sequelize.STRING
   },
+  showEntertainmentId: {
+    type: Sequelize.INTEGER,
+    references: {
+      model: Entertainment,
+      key: 'id'
+    }
+  },
   showId: {
-    type: Sequelize.INTEGER
+    type: Sequelize.INTEGER,
+    references: {
+      model: Show,
+      key: 'entertainmentId'
+    }
   }
 }, {
   timestamps: false
@@ -303,12 +318,14 @@ Genre.belongsToMany(Entertainment, { as: 'Entertainment', through: {model: Enter
 
 Entertainment.belongsTo(Language, {foreignKey: "languageId", as: "language"});
 Language.hasMany(Entertainment, {as: "entertainmentLanguage"});
+
 Film.belongsTo(Entertainment, {foreignKey: "entertainmentId", as: "entertainmentFilm"});
 Entertainment.hasOne(Film);
-Show.belongsTo(Entertainment, {foreignKey: "entertainmentId", as: "entertainmentShow"});
+
+Show.belongsTo(Entertainment, {foreignKey: "entertainmentId", as: "shows"});
 Entertainment.hasOne(Show);
-Season.belongsTo(Show, {foreignKey: "showId", as: "showSeason"});
-Show.hasOne(Season);
+Season.belongsTo(Show, {foreignKey: "showId", as: "shows"});
+Show.hasMany(Season, {as: 'seasonInShow'});
 
 sequelize.sync({fouce: true})
 .then( () => {
@@ -386,7 +403,8 @@ sequelize.sync({fouce: true})
   //   title: "Season 1",
   //   releasedate: Date.now(),
   //   description: "beskrivelse",
-  //   showId: 1
+  //   showId: 1,
+  //   showEntertainmentId: 1
   // });
 
   // Entertainment_has_actors.create({

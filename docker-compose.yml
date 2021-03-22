@@ -22,7 +22,6 @@ services:
       - 3307:3306
     volumes:
       - ./db/:/docker-entrypoint-initdb.d/
-
   # adminer
   adminer:
     depends_on:
@@ -31,28 +30,8 @@ services:
     restart: always
     ports:
       - 8080:8080
-
-  # # backend
-  # backend:
-  #   # build: ./backend-secure
-  #   build: ./backend
-  #   depends_on:
-  #     - mysql
-  #   expose:
-  #     - 8000
-  #   environment:
-  #     <<: *common-variables
-  #   volumes:
-  #     - ./backend:/app
-  #     # - /app/node_modules # anonymous volume for node_modules only
-  #   links:
-  #     - mysql
-  #   ports:
-  #     - 8000:8000
-
-    # backend
+  # backend
   backend-v2:
-    # build: ./backend-secure
     build: ./backend-v2
     depends_on:
       - mysql
@@ -62,8 +41,27 @@ services:
       <<: *common-variables
     volumes:
       - ./backend-v2:/app
-      # - /app/node_modules # anonymous volume for node_modules only
     links:
       - mysql
     ports:
       - 8000:8000
+  strapiexample:
+    image: strapi/strapi
+    container_name: strapiexample
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_CLIENT: ${DATABASE_CLIENT}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+    #    links:
+    #      - mongo:mongo
+    networks:
+      - strapi-app-network
+    volumes:
+      - ./app:/srv/app
+    ports:
+      - "1337:1337"

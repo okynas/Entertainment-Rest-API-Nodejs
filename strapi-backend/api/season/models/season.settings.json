@@ -1,0 +1,31 @@
+{
+  "kind": "collectionType",
+  "collectionName": "seasons",
+  "info": {
+    "name": "season"
+  },
+  "options": {
+    "increments": true,
+    "timestamps": true,
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "releasedate": {
+      "type": "date"
+    },
+    "description": {
+      "type": "richtext"
+    },
+    "seasonNumber": {
+      "type": "integer"
+    },
+    "show": {
+      "model": "show",
+      "via": "seasons"
+    }
+  }
+}
