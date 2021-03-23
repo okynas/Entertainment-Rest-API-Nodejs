@@ -8,7 +8,7 @@ const { Op } = require("sequelize");
 
 const Actor = sequelize.Actor;
 const Language = sequelize.Language;
-const Entertainment = sequelize.Entertainment;
+// const Entertainment = sequelize.Entertainment;
 const Film = sequelize.Film;
 const Show = sequelize.Show;
 const Genre = sequelize.Genre;
@@ -105,32 +105,32 @@ router.get("/language", async (req, res, next) => {
 
 });
 
-router.get("/genre", async (req, res, next) => {
+// router.get("/genre", async (req, res, next) => {
+//   try {
+//     const genres = await Genre.findAll();
+
+//     if (!genres) throw "Genres not found";
+
+//     return res.status(200).json({
+//       status: 200,
+//       message: "Getting all genres",
+//       genre: genres
+//     });
+//   }
+//   catch(err) {
+//     return res.status(400).json({
+//       status: 400,
+//       message: "Error",
+//       error: err
+//     });
+//   }
+
+// });
+
+router.get("/film", async (req, res, next) => {
+
   try {
-    const genres = await Genre.findAll();
-
-    if (!genres) throw "Genres not found";
-
-    return res.status(200).json({
-      status: 200,
-      message: "Getting all genres",
-      genre: genres
-    });
-  }
-  catch(err) {
-    return res.status(400).json({
-      status: 400,
-      message: "Error",
-      error: err
-    });
-  }
-
-});
-
-router.get("/entertainment", async (req, res, next) => {
-
-  try {
-    const entertainment = await Entertainment.findAll({
+    const films = await Film.findAll({
       attributes: ['id', 'title', 'poster', 'description','releasedate', 'trailer'],
       include: [
         {
@@ -158,12 +158,12 @@ router.get("/entertainment", async (req, res, next) => {
       ],
     });
 
-    if (!entertainment) throw "entertainment not found"
+    if (!films) throw "films not found"
 
     return res.status(200).json({
       status: 200,
-      message: "Retrieving all entertainment ✨",
-      entertainment: entertainment
+      message: "Retrieving all films ✨",
+      films: films
     });
   }
   catch (err) {
@@ -176,15 +176,9 @@ router.get("/entertainment", async (req, res, next) => {
 
 });
 
-router.get("/entertainment/:nameOrId", async (req, res, next) => {
+router.get("/show", async (req, res, next) => {
   try {
-    const entertainment = await Entertainment.findOne({
-      where: {
-        [Op.or]: [
-          {id: req.params.nameOrId },
-          {title: req.params.nameOrId}
-        ]
-      },
+    const shows = await Show.findAll({
       attributes: ['id', 'title', 'poster', 'description','releasedate', 'trailer'],
       include: [
         {
@@ -208,121 +202,12 @@ router.get("/entertainment/:nameOrId", async (req, res, next) => {
         {
           model: Language,
           as: 'language'
-        }
-      ],
-    });
-
-    if (!entertainment) throw "entertainment not found";
-
-    return res.status(200).json({
-      status: 200,
-      message: "Getting One entertainment",
-      entertainment: entertainment
-    });
-  }
-  catch (err) {
-    return res.status(400).json({
-      status: 400,
-      message: "Error",
-      error: err,
-    });
-  }
-});
-
-router.get("/films", async (req, res, next) => {
-  try {
-    const films = await Film.findAll({
-      attributes: ['duration'],
-      include: [{
-       model: Entertainment,
-       as: 'entertainmentFilm',
-       attributes: ['id', 'title', 'poster', 'description', 'releasedate', 'trailer'],
-       include: [
-        {
-          model: Actor ,
-          as : "Actors",
-          attributes: ['id', 'first_name', 'last_name', 'bio','birthdate'],
-          through: {
-            attributes: ['role'],
-            as: "roleInShow"
-          }
-        },
-        {
-          model: Genre,
-          as: 'Genre',
-          attributes: ['genre'],
-          through: {
-            attributes: [],
-            as: "genreInShow"
-          }
-        },
-        {
-          model: Language,
-          as: 'language'
-        }
-      ],
-      }]
-    });
-
-    if (!films) throw "Film not found"
-
-    return res.status(200).json({
-      staus: 200,
-      message: "Get all films",
-      films
-    });
-  }
-  catch(err) {
-    return res.status(400).json({
-      staus: 400,
-      message: "Error",
-      error: err
-    });
-  }
-
-});
-
-router.get("/show", async (req, res, next) => {
-  try {
-    const shows = await Show.findAll({
-      attributes: {
-        exclude: ["entertainmentId"]
-      },
-      include: [{
-       model: Entertainment,
-       as: 'show',
-       attributes: ['id', 'title', 'poster', 'description', 'releasedate', 'trailer'],
-       include: [
-        {
-          model: Actor ,
-          as : "Actors",
-          attributes: ['id', 'first_name', 'last_name', 'bio','birthdate'],
-          through: {
-            attributes: ['role'],
-            as: "roleInShow"
-          },
-        },
-        {
-          model: Genre,
-          as: 'Genre',
-          attributes: ['genre'],
-          through: {
-            attributes: [],
-            as: "genreInShow"
-          }
-        },
-        {
-          model: Language,
-          as: 'language',
-          attributes: ['language']
         },
         // {
         //   model: Season,
-        //   as: 'seasonInShow'
+        //   as: 'shows'
         // }
       ],
-      },
-     ]
     });
 
     if (!shows) throw new Error("Film not found");
@@ -330,63 +215,65 @@ router.get("/show", async (req, res, next) => {
     return res.status(200).json({
       staus: 200,
       message: "Get all shows",
-      shows
+      shows,
     });
   }
   catch(err) {
     return res.status(400).json({
       staus: 400,
       message: "Error",
-      error: err
+      error: String(err)
     });
   }
 
 });
 
-router.get("/season", async (req, res, next) => {
-  try {
-    const season = await Season.findAll({
-      attributes: ['title', 'seasonNumber', 'releasedate', 'description'],
-      include: [
-        {
-          model: Show,
-          as: "shows",
-          // through: {
-            // attributes: [],
-            // as: "genreInShow"
-          // },
-          include: {
-            model: Entertainment,
-            as: 'shows',
-            attributes: ['id', 'title', 'poster', 'description', 'releasedate', 'trailer'],
-            include: [
-              {
-                model: Language,
-                as: 'language',
-                attributes: ['language']
-              }
-            ]
-          }
-        }
-      ]
-    });
+// router.get("/season", async (req, res, next) => {
+//   try {
+//     const season = await Season.findAll(
+//       {
+//       attributes: ['title', 'seasonNumber', 'releasedate', 'description'],
+//       include: [
+//         {
+//           model: Show,
+//           as: "shows",
+//           // through: {
+//             // attributes: [],
+//             // as: "genreInShow"
+//           // },
+//           // include: {
+//           //   model: Show,
+//           //   as: 'shows',
+//           //   attributes: ['id', 'title', 'poster', 'description', 'releasedate', 'trailer'],
+//           //   include: [
+//           //     {
+//           //       model: Language,
+//           //       as: 'language',
+//           //       attributes: ['language']
+//           //     }
+//           //   ]
+//           // }
+//         }
+//       ]
+//     }
+//     );
 
-    if (!season) throw "Season not found"
+//     if (!season) throw "Season not found"
 
-    return res.status(200).json({
-      staus: 200,
-      message: "Get all seasons",
-      season
-    });
-  }
-  catch(err) {
-    return res.status(400).json({
-      staus: 400,
-      message: "Error",
-      error: err
-    });
-  }
+//     return res.status(200).json({
+//       staus: 200,
+//       message: "Get all seasons",
+//       season
+//     });
+//   }
+//   catch(err) {
+//     return res.status(400).json({
+//       staus: 400,
+//       message: "Error",
+//       error: String(err)
+//     });
+//   }
 
-});
+// });
 
 module.exports = router;
