@@ -374,7 +374,7 @@ Show.belongsTo(Language, {foreignKey: "languageId", as: "language"});
 Language.hasMany(Show, {as: "showLanguage"});
 
 Season.belongsTo(Show, {foreignKey: "showId", as: "shows"});
-Show.hasMany(Season, {as: 'seasonInShow'});
+Show.hasMany(Season, {as: 'seasons'});
 
 sequelize.sync({fouce: true})
 .then( () => {

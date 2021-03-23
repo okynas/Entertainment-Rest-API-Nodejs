@@ -201,12 +201,14 @@ router.get("/show", async (req, res, next) => {
         },
         {
           model: Language,
-          as: 'language'
+          as: 'language',
+          // attributes: ['language']
         },
-        // {
-        //   model: Season,
-        //   as: 'shows'
-        // }
+        {
+          model: Season,
+          as: "seasons",
+          // attributes: ['title', 'releasedate', 'description'],
+        }
       ],
     });
 
