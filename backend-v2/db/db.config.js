@@ -349,6 +349,34 @@ const Season = sequelize.define("seasons", {
   timestamps: false
 });
 
+const Episode = sequelize.define("episodes", {
+  id: {
+    type: Sequelize.INTEGER,
+    primaryKey: true
+  },
+  title: {
+    type: Sequelize.STRING
+  },
+  releasedate: {
+    type: Sequelize.DATE
+  },
+  description: {
+    type: Sequelize.STRING
+  },
+  length: {
+    type: Sequelize.INTEGER
+  },
+  seasonNumber: {
+    type: Sequelize.INTEGER,
+    references: {
+      model: Season,
+      key: 'seasonNumber'
+    }
+  },
+}, {
+  timestamps: false
+});
+
 // ======== >= <= ========
 //        RELATIONS
 // ======== >= <= ========
@@ -375,6 +403,9 @@ Language.hasMany(Show, {as: "showLanguage"});
 
 Season.belongsTo(Show, {foreignKey: "showId", as: "shows"});
 Show.hasMany(Season, {as: 'seasons'});
+
+Episode.belongsTo(Season, {foreignKey: "seasonNumber", as: "season"});
+Season.hasMany(Episode, {as: 'episodes'});
 
 sequelize.sync({fouce: true})
 .then( () => {
@@ -414,10 +445,11 @@ sequelize.sync({fouce: true})
   //   "updatedAt": Date.now(),
   //   "roleId": 3
   // });
+
   // Language.create({
   //   "id": 1,
   //   "language": "English"
-  // })
+  // });
 
   // Genre.create({
   //   "id": 1,
@@ -459,6 +491,15 @@ sequelize.sync({fouce: true})
   //   showId: 1,
   // });
 
+  // Episode.create({
+  //   id: 1,
+  //   seasonNumber: 1,
+  //   title: "Episode 1",
+  //   releasedate: Date.now(),
+  //   description: "beskrivelse",
+  //   length: 155,
+  // });
+
   // Film_has_actors.create({
   //   "filmId": 1,
   //   "actorId": 1,
@@ -497,5 +538,6 @@ module.exports = {
   Show,
   // Show_has_actors,
   // Show_has_genre,
-  Season
+  Season,
+  Episode
 };
