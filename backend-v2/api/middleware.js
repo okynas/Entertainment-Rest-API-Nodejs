@@ -117,22 +117,21 @@ module.exports.checkUserRole = async function(currentUser, userToDelete) {
   });
 
   const roleOfCurrentUser = thisUser["role"]["level"]; // => 3 if admin
-  // console.log("CURRENT USER ROLE LEVEL IS ===", typeof roleOfCurrentUser)
 
   const {name, level} = await Role.findOne({
     where: {name: userToDelete},
     attributes: ['name', 'level']
   });
 
-  // console.log("LEVEL OF USER TO DELETE IS ===", typeof level)
-
   if (roleOfCurrentUser >= level) {
-    // console.log("THIS IS GETTING RUN!!!")
     return roleOfCurrentUser;
   } else {
     return null;
   }
 
-  // console.log(thisUser);
+}
 
+module.exports.capitalizeFirst = function(string) {
+  string = string.toLowerCase()
+  return string.charAt(0).toUpperCase() + string.slice(1);
 }

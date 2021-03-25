@@ -31,7 +31,7 @@ router.get("/actors", async (req, res, next) => {
     return res.status(400).json({
       status: 400,
       message: "Error",
-      error: err
+      error: String(err)
     })
   }
 });
@@ -59,7 +59,7 @@ router.get("/actors/:name", async (req, res, next) => {
 
     } else {
       actor = await Actor.findOne({
-        where: {first_name: actorName }
+        where: { first_name: actorName }
       });
     }
 
@@ -75,7 +75,7 @@ router.get("/actors/:name", async (req, res, next) => {
     return res.status(400).json({
       status: 400,
       message: "Error",
-      error: err,
+      error: String(err)
     })
   }
 
@@ -99,7 +99,7 @@ router.get("/language", async (req, res, next) => {
     return res.status(400).json({
       status: 400,
       message: "Error",
-      error: err
+      error: String(err)
     });
   }
 
@@ -121,7 +121,7 @@ router.get("/genre", async (req, res, next) => {
     return res.status(400).json({
       status: 400,
       message: "Error",
-      error: err
+      error: String(err)
     });
   }
 
@@ -139,7 +139,7 @@ router.get("/film", async (req, res, next) => {
           attributes: ['id', 'first_name', 'last_name', 'bio','birthdate'],
           through: {
             attributes: ['role'],
-            as: "roleInShow"
+            as: "role"
           }
         },
         {
@@ -170,7 +170,7 @@ router.get("/film", async (req, res, next) => {
     return res.status(400).json({
       status: 400,
       message: "Error",
-      error: err
+      error: String(err)
     })
   }
 
@@ -206,9 +206,11 @@ router.get("/show", async (req, res, next) => {
         {
           model: Season,
           as: "seasons",
+          attributes : ['title', 'description', 'releasedate', 'seasonNumber'],
           include: {
             model: Episode,
-            as: "episodes"
+            as: "episodes",
+            attributes : ['id', 'title', 'description', 'releasedate', 'seasonNumber', 'length'],
           }
         }
       ],
@@ -232,16 +234,40 @@ router.get("/show", async (req, res, next) => {
 
 });
 
+router.get("/season", async (req, res, next) => {
+  try {
+    const season = await Season.findAll({
+      attributes: ['seasonNumber', 'title', 'releasedate', 'description']
+    });
+
+    if (!season) throw "Genres not found";
+
+    return res.status(200).json({
+      status: 200,
+      message: "Getting all Seasons",
+      season: season
+    });
+  }
+  catch(err) {
+    return res.status(400).json({
+      status: 400,
+      message: "Error",
+      error: String(err)
+    });
+  }
+
+});
+
 router.get("/episodes", async (req, res, next) => {
   try {
     const ep = await Episode.findAll();
 
-    if (!ep) throw "Genres not found";
+    if (!ep) throw "Episodes not found";
 
     return res.status(200).json({
       status: 200,
-      message: "Getting all genres",
-      ep: ep
+      message: "Getting all Episodes",
+      episodes: ep
     });
   }
   catch(err) {

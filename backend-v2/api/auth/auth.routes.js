@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const {authentication, userExist, alreadyLoggedIn, createAccessToken, findUser, isStaff, findUserAndLogIn, checkUserRole} = require("../middleware")
+const {authentication, userExist, alreadyLoggedIn, createAccessToken, findUser, isStaff, findUserAndLogIn, checkUserRole, capitalizeFirst} = require("../middleware")
 const express = require("express");
 const router = express.Router();
 const sequelize = require("../../db/db.config");
@@ -8,7 +8,7 @@ const User = sequelize.User;
 const Role = sequelize.Role;
 
 
-router.get("/allUsers", authentication, isStaff, async (req, res, next) => {
+router.get("/users", authentication, isStaff, async (req, res, next) => {
 
   var allUsers = await User.findAll({
     attributes: { exclude: ["password"] },
@@ -23,24 +23,35 @@ router.get("/allUsers", authentication, isStaff, async (req, res, next) => {
 
 });
 
+//  TODO:
+// router.put("/users", authentication, async (req, res, next) => {
+//   const user = await User.update(
+//     {
+//       email: req.body.email,
+//       first_name: req.body.first_name,
+//       last_name: req.body.last_name,
+//       gender: req.body.gender
+//     },
+//     {
+//       where: {
+//         username: req.body.username
+//       }
+//     }
+//   );
+
+//   return res.status(201).json({
+//     status: 201,
+//     message: "Successfully updated role",
+//     user: req.body.username
+//   });
+
+// });
+
 // ####################################
-// Getting Roles
+// Authenticated Profile
 // ####################################
 
-router.get("/roles", authentication, isStaff, async (req, res, next) => {
-  const allRoles = await Role.findAll();
-  return res.status(200).json({
-    status: 200,
-    message: "Showing all roles",
-    roles: allRoles
-  })
-});
-
-// ####################################
-// Authenticated Route / Private route
-// ####################################
-
-router.get("/private", authentication, async (req, res, next) => {
+router.get("/profile", authentication, async (req, res, next) => {
 
   const loggedInUser = jwt.verify(req.session.token, process.env.TOKEN_SECRET).username;
   const fullUser = await User.findOne({
@@ -59,6 +70,7 @@ router.get("/private", authentication, async (req, res, next) => {
 // ####################################
 // Login
 // ####################################
+
 router.post("/login", alreadyLoggedIn, userExist, async (req, res, next) => {
 
   const userToCheck = await findUserAndLogIn(req.body.username, req.body.email, req.body.password);
@@ -74,18 +86,10 @@ router.post("/login", alreadyLoggedIn, userExist, async (req, res, next) => {
     });
 });
 
-
-// router.get("/abc", (req, res, next) => {
-//   res.status(200).json({
-//     password: "admin",
-//     hash: crypto.pbkdf2Sync("admin", "salt", 100000, 102, "sha512").toString("hex")
-//   })
-// })
-
 // ####################################
 // Signup
 // ####################################
-router.post("/signup", async (req, res, next) => {
+router.post("/signup", alreadyLoggedIn, async (req, res, next) => {
   const existingUser = await findUser(req.body.username)
 
   if (existingUser) {
@@ -133,41 +137,27 @@ router.post("/logout", (req, res, next) => {
 
 });
 
-router.put("/role", authentication, isStaff, async (req, res, next) => {
+// ####################################
+// Roles
+// ####################################
 
-  const userRoleCheck = checkUserRole(jwt.verify(req.session.token, process.env.TOKEN_SECRET).username, req.body.role);
-
-  if (userRoleCheck !== NaN && userRoleCheck > req.body.level) {
-
-    const roleExist = await Role.findOne({ where: { name : req.body.role} });
-
-    if (roleExist) {
-      await Role.update({ name: req.body.newName, level: req.body.newLevel }, {
-        where: {
-          name: req.body.role
-        }
-      });
-
-      return res.status(201).json({
-        status: 201,
-        message: "Successfully updated role",
-        role: req.body.role
-      })
-    }
-
-    return res.status(403).json({
-      status: 403,
-      message: "Unable to update role, role does not exist",
-    })
-
-
-  }
-
-  return res.status(401).json({
-    status: 401,
-    message: "Not permission to update role"
+router.get("/roles", authentication, isStaff, async (req, res, next) => {
+  const allRoles = await Role.findAll();
+  return res.status(200).json({
+    status: 200,
+    message: "Showing all roles",
+    roles: allRoles
   })
+});
 
+router.get("/roles/:name", async (req, res, next) => {
+  const nameToCheck = capitalizeFirst(req.params.name)
+  const allRoles = await Role.findAll({where: {name: nameToCheck}});
+  return res.status(200).json({
+    status: 200,
+    message: "Showing all roles",
+    roles: allRoles
+  })
 });
 
 router.post("/role", authentication, isStaff, async (req, res, next) => {
@@ -196,7 +186,42 @@ router.post("/role", authentication, isStaff, async (req, res, next) => {
     status: 401,
     message: "Not permission to create role"
   })
+});
 
+router.put("/role", authentication, isStaff, async (req, res, next) => {
+
+  const userRoleCheck = checkUserRole(jwt.verify(req.session.token, process.env.TOKEN_SECRET).username, req.body.role);
+
+  if (userRoleCheck !== NaN && userRoleCheck > req.body.level) {
+
+    const roleExist = await Role.findOne({ where: { name : req.body.role} });
+
+    if (roleExist) {
+      await Role.update({ name: req.body.newName, level: req.body.newLevel }, {
+        where: {
+          name: req.body.role
+        }
+      });
+
+      return res.status(201).json({
+        status: 201,
+        message: "Successfully updated role",
+        role: req.body.role
+      })
+    }
+
+    return res.status(403).json({
+      status: 403,
+      message: "Unable to update role, role does not exist",
+    });
+
+
+  }
+
+  return res.status(401).json({
+    status: 401,
+    message: "Not permission to update role"
+  })
 
 });
 
