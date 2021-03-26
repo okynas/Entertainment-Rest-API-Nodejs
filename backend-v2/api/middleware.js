@@ -19,7 +19,8 @@ module.exports.authentication = function(req, res, next) {
 
   return res.status(401).json({
     status: 401,
-    message: "Unauthorized"
+    status_type: "Unauthorized",
+    message: "You are not logged in! Please login to access"
   })
 }
 
@@ -27,9 +28,10 @@ module.exports.alreadyLoggedIn = async function(req, res, next) {
   if (req.session.token) {
     return res.status(200).json({
       status: 200,
-      user: jwt.verify(req.session.token, process.env.TOKEN_SECRET).username,
+      status_type: "OK",
+      user: `Logged in as: ${jwt.verify(req.session.token, process.env.TOKEN_SECRET).username}`,
       message: "Already logged in"
-    })
+    });
   }
   else {
     next();
@@ -44,29 +46,42 @@ module.exports.isStaff = async function(req, res, next) {
       include: ["role"]
     })
 
-    const rolleId = userToCheck["role"]["id"];
+    const rolleLevel = userToCheck["role"]["level"];
 
-    if (rolleId >= 2) {
-      return next();
-    }
+    if (rolleLevel >= 2) return next();
 
-    throw "Unauthorized"
+    throw "You do not have permission to this route!"
 
   }
   catch(err) {
     return res.status(401).json({
       status: 401,
+      status_type: "Unauthorized",
       error: String(err)
     })
   }
+}
 
+module.exports.checkPermissionToOneUser = async function(username) {
+  try {
+    const {role} = await User.findOne({
+      where: {username: username},
+      include: ["role"],
+    });
 
+    if (role['level'] < 2) throw "You dont have permission to do this!"
+
+    return role;
+  }
+  catch(err) {
+    return null;
+  }
 }
 
 module.exports.userExist = async function(req, res, next) {
 
   try {
-    const key = crypto.pbkdf2Sync(req.body.password, "salt", 100000, 102, "sha512");
+    const key = crypto.pbkdf2Sync(req.body.password, process.env.PWD_HASH_SALT, Number(process.env.PWD_HASH_ITERATION), Number(process.env.PWD_HASH_LENGTH), process.env.PWD_HASH_ALGORITHM);
     const userToCheck = await User.findOne({
       where: {
         [Op.and] : [
@@ -77,11 +92,10 @@ module.exports.userExist = async function(req, res, next) {
       }
     });
 
-    if (userToCheck) {
-      return next();
-    }
+    if (!userToCheck) throw "User not found";
 
-    throw "User not found";
+    next();
+
   }
 
   catch(err) {
@@ -102,9 +116,10 @@ module.exports.findUser = async function(username) {
       include: ["role"]
     });
 
-    if (userToCheck) return userToCheck;
+    if (!userToCheck) throw "User does not exist";
 
-    throw "User does not exist"
+    return userToCheck;
+
   }
 
   catch(err) {
@@ -115,42 +130,58 @@ module.exports.findUser = async function(username) {
 }
 
 module.exports.findUserAndLogIn = async function(username, email, password) {
-  const key = crypto.pbkdf2Sync(password, "salt", 100000, 102, "sha512")
+  try {
+    const key = crypto.pbkdf2Sync(password, process.env.PWD_HASH_SALT, Number(process.env.PWD_HASH_ITERATION), Number(process.env.PWD_HASH_LENGTH), process.env.PWD_HASH_ALGORITHM);
 
-  const userToCheck = await User.findOne({
-    where: {
-      [Op.and] : [
-        {username: username},
-        {email: email},
-        {password: key.toString("hex")},
-      ],
-    },
-    attributes: {
-      exclude: ["password"]
-    }
-  })
+    const userToCheck = await User.findOne({
+      where: {
+        [Op.and] : [
+          {username: username},
+          {email: email},
+          {password: key.toString("hex")},
+        ],
+      },
+      attributes: {
+        exclude: ["password"]
+      }
+    });
 
-  return userToCheck.username;
+    if(!userToCheck) throw "Could not find user!";
+
+    return userToCheck.username;
+  }
+  catch(err) {
+    return null;
+  }
+
 }
 
-module.exports.checkUserRole = async function(currentUser, userToDelete) {
+module.exports.checkUserRole = async function(currentUser, userOrRoleToCheck) {
 
-  const thisUser = await User.findOne({
-    where: {username: currentUser},
-    include: ["role"],
-  });
+  try {
+    const {role} = await User.findOne({
+      where: {username: currentUser},
+      include: ["role"],
+    });
 
-  const roleOfCurrentUser = thisUser["role"]["level"]; // => 3 if admin
+    if (!role) throw "User does not exist!"
 
-  const {name, level} = await Role.findOne({
-    where: {name: userToDelete},
-    attributes: ['name', 'level']
-  });
+    const roleOfCurrentUser = role["level"]; // => 3 if admin
 
-  if (roleOfCurrentUser >= level) {
+    if (!roleOfCurrentUser) throw "User does not have a role!"
+
+    const {level} = await Role.findOne({
+      where: {name: userOrRoleToCheck},
+      attributes: ['level']
+    });
+
+    if (!level) throw "Could not find role!";
+    if (roleOfCurrentUser < level) throw "You do not have permisson!";
     return roleOfCurrentUser;
-  } else {
-    return null;
+
+  }
+  catch(err) {
+    return null
   }
 
 }

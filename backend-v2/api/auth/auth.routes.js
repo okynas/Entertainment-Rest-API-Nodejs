@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const {authentication, userExist, alreadyLoggedIn, createAccessToken, findUser, isStaff, findUserAndLogIn, checkUserRole, capitalizeFirst} = require("../middleware")
+const {authentication, userExist, alreadyLoggedIn, createAccessToken, findUser, isStaff, findUserAndLogIn, checkUserRole, capitalizeFirst, checkPermissionToOneUser} = require("../middleware")
 const express = require("express");
 const router = express.Router();
 const sequelize = require("../../db/db.config");
@@ -18,7 +18,7 @@ router.get("/users", authentication, isStaff, async (req, res, next) => {
       include: ["role"]
     });
 
-    if (!allUsers) throw "No users to query!"
+    if (!allUsers) throw "No users to query!";
 
     return res.status(200).json({
       status: 200,
@@ -40,28 +40,54 @@ router.get("/users", authentication, isStaff, async (req, res, next) => {
 
 });
 
-//  TODO:
 router.put("/users", authentication, async (req, res, next) => {
-  const user = await User.update(
-    {
-      email: req.body.email,
-      first_name: req.body.first_name,
-      last_name: req.body.last_name,
-      gender: req.body.gender
-    },
-    {
-      where: {
-        username: req.body.username
-      }
-    }
-  );
+  try {
+    const currentUser = jwt.verify(req.session.token, process.env.TOKEN_SECRET).username;
+    const levelTwoOrHigher = await checkPermissionToOneUser(currentUser);
 
-  return res.status(201).json({
-    status: 201,
-    status_type: "Created",
-    message: "Successfully updated role",
-    user: req.body.username
-  });
+    const valuesToUpdate = {
+      email: undefined,
+      first_name: undefined,
+      last_name: undefined,
+      gender: undefined,
+      updatedAt: Date.now(),
+      roleId: undefined,
+      username: undefined
+    }
+
+    if (req.body.email) valuesToUpdate.email = req.body.email;
+    if (req.body.first_name) valuesToUpdate.first_name = req.body.first_name;
+    if (req.body.last_name) valuesToUpdate.last_name = req.body.last_name;
+    if (req.body.gender) valuesToUpdate.gender = req.body.gender;
+    if (req.body.newUsername) valuesToUpdate.username = req.body.newUsername;
+
+    //  If your permission is 2 or higher
+    if (levelTwoOrHigher && levelTwoOrHigher < req.body.roleId) throw "You cant create a user with higher permission than yourself!";
+    if (levelTwoOrHigher && req.body.roleId) valuesToUpdate.roleId = req.body.roleId;
+    if (!levelTwoOrHigher && req.body.roleId) throw "You do not have permission to do this!";
+
+    await User.update(
+      valuesToUpdate,
+      { where: { username: req.body.username } }
+    );
+
+    return res.status(201).json({
+      status: 201,
+      status_type: "Created",
+      message: "Successfully updated role",
+    });
+
+  }
+  catch(err) {
+    return res.status(403).json({
+      status: 403,
+      status_type: "Forbidden",
+      error: String(err)
+    });
+  }
+});
+
+router.delete("/users", authentication, async (req, res, next) => {
 
 });
 
@@ -70,70 +96,96 @@ router.put("/users", authentication, async (req, res, next) => {
 // ####################################
 
 router.get("/profile", authentication, async (req, res, next) => {
+  try {
+    const loggedInUser = jwt.verify(req.session.token, process.env.TOKEN_SECRET).username;
 
-  const loggedInUser = jwt.verify(req.session.token, process.env.TOKEN_SECRET).username;
-  const fullUser = await User.findOne({
-    where: { username: loggedInUser },
-    attributes: { exclude: ["password"] },
-    include: ["role"]
-  })
+    if (!loggedInUser) throw "Not logged in!";
 
-  return res.status(200).json({
-    status: 200,
-    status_type: "OK",
-    message: "You have come to the private route 🙊",
-    user: fullUser
-  })
-})
+    const fullUser = await User.findOne({
+      where: { username: loggedInUser },
+      attributes: { exclude: ["password", "roleId"] },
+      include: ["role"]
+    })
+
+    if (!fullUser) throw "Could not find your user";
+
+    return res.status(200).json({
+      status: 200,
+      status_type: "OK",
+      message: "Showing your profile 🙊",
+      user: fullUser
+    })
+  }
+  catch(err) {
+    return res.status(403).json({
+      status: 403,
+      status_type: "Forbidden",
+      error: String(err)
+    });
+  }
+});
 
 // ####################################
 // Login
 // ####################################
 
 router.post("/login", alreadyLoggedIn, userExist, async (req, res, next) => {
+  try {
+    const userToCheck = await findUserAndLogIn(req.body.username, req.body.email, req.body.password);
+    const token = createAccessToken(userToCheck);
 
-  const userToCheck = await findUserAndLogIn(req.body.username, req.body.email, req.body.password);
-  const token = createAccessToken(userToCheck);
+    if (!userToCheck) throw "Could not find user!";
+    req.session.token = token;
 
-  req.session.token = token;
-
-  return res.status(200)
-    .json({
+    return res.status(200).json({
       status: 200,
       status_type: "OK",
       user: userToCheck,
       token: token
     });
+  }
+  catch(err) {
+    return res.status(403).json({
+      status: 403,
+      status_type: "Forbidden",
+      error: String(err)
+    });
+  }
 });
 
 // ####################################
 // Signup
 // ####################################
 router.post("/signup", alreadyLoggedIn, async (req, res, next) => {
-  const existingUser = await findUser(req.body.username)
 
-  if (existingUser) {
+  try {
+    const existingUser = await findUser(req.body.username)
+
+    if (existingUser) throw "Can't create user, already exists";
+
+    const password = crypto.pbkdf2Sync(req.body.password, process.env.PWD_HASH_SALT, Number(process.env.PWD_HASH_ITERATION), Number(process.env.PWD_HASH_LENGTH), process.env.PWD_HASH_ALGORITHM);
+    const createdUser = await User.create({
+      "username": req.body.username,
+      "email": req.body.email,
+      "first_name": req.body.first_name,
+      "last_name": req.body.last_name,
+      "gender": req.body.gender,
+      "password": password.toString("hex"),
+      "createdAt": Date.now(),
+      "updatedAt": Date.now(),
+      "roleId": 1
+    });
+
+    return res.json(createdUser);
+  }
+  catch(err) {
     return res.status(403).json({
       status: 403,
       status_type: "Forbidden",
-      message: "User already exist",
-    })
+      error: String(err)
+    });
   }
 
-  const password = crypto.pbkdf2Sync(req.body.password, "salt", 100000, 102, "sha512")
-  const createdUser = await User.create({
-    "username": req.body.username,
-    "email": req.body.email,
-    "first_name": req.body.first_name,
-    "last_name": req.body.last_name,
-    "gender": req.body.gender,
-    "password": password.toString("hex"),
-    "createdAt": Date.now(),
-    "updatedAt": Date.now(),
-    "roleId": 1
-  })
-
-  return res.json(createdUser);
 
 });
 
@@ -142,7 +194,8 @@ router.post("/signup", alreadyLoggedIn, async (req, res, next) => {
 // ####################################
 
 router.post("/logout", (req, res, next) => {
-  if (req.session.token) {
+  try {
+    if (!req.session.token) throw "Logging out failed!"
     req.session.token = undefined;
 
     return res.status(201).json({
@@ -150,14 +203,15 @@ router.post("/logout", (req, res, next) => {
       status_type: "Created",
       message: "Logged out successfully"
     });
-
   }
 
-  return res.status(400).json({
-    status: 400,
-    status_type: "Bad Request",
-    message: "Logging out failed!"
-  })
+  catch(err) {
+    return res.status(400).json({
+      status: 400,
+      status_type: "Bad Request",
+      error: String(err)
+    })
+  }
 
 });
 
@@ -167,135 +221,152 @@ router.post("/logout", (req, res, next) => {
 
 router.get("/roles", authentication, isStaff, async (req, res, next) => {
 
-  const allRoles = await Role.findAll(
-    {
-      order: [
-        ['level', 'ASC'],
-        ['name', 'ASC']
-      ]
-    }
-  );
+  try {
+    const allRoles = await Role.findAll(
+      { order: [
+          ['level', 'ASC'],
+          ['name', 'ASC']
+      ]}
+    );
 
-  return res.status(200).json({
-    status: 200,
-    status_type: "OK",
-    message: "Showing all roles",
-    roles: allRoles
-  })
+    if (!allRoles) throw "Could not fetch roles!"
+
+    return res.status(200).json({
+      status: 200,
+      status_type: "OK",
+      message: "Showing all roles",
+      roles: allRoles
+    })
+  }
+  catch(err) {
+    return res.status(400).json({
+      status: 400,
+      status_type: "Bad Request",
+      error: String(err)
+    })
+  }
+
+
 });
 
-router.get("/roles/:name", async (req, res, next) => {
-  const nameToCheck = capitalizeFirst(req.params.name)
-  const allRoles = await Role.findAll({where: {name: nameToCheck}});
-  return res.status(200).json({
-    status: 200,
-    status_type: "OK",
-    message: "Showing all roles",
-    roles: allRoles
-  })
+router.get("/roles/:name", authentication, isStaff, async (req, res, next) => {
+
+  try {
+    const nameToCheck = capitalizeFirst(req.params.name)
+    const oneRole = await Role.findAll({where: {name: nameToCheck}});
+
+    if (!oneRole) throw "Could not find role!"
+
+    return res.status(200).json({
+      status: 200,
+      status_type: "OK",
+      message: "Showing one role role",
+      roles: oneRole
+    })
+  }
+  catch(err) {
+    return res.status(400).json({
+      status: 400,
+      status_type: "Bad Request",
+      error: String(err)
+    })
+  }
+
 });
 
 router.post("/role", authentication, isStaff, async (req, res, next) => {
 
-  const userRoleCheck = checkUserRole(jwt.verify(req.session.token, process.env.TOKEN_SECRET).username, req.body.role);
+  try {
+    const userRoleCheck = checkUserRole(jwt.verify(req.session.token, process.env.TOKEN_SECRET).username, req.body.role);
 
-  if (userRoleCheck !== NaN && userRoleCheck > req.body.level) {
+    if (userRoleCheck === NaN) throw "Something went wrong!";
+    if (userRoleCheck < req.body.level) throw "You dont have permission!";
+
     const roleExist = await Role.findOne({ where: { name : req.body.role} });
 
-    if (!roleExist) {
-      await Role.create({ name: req.body.role, level: req.body.level});
-      return res.status(201).json({
-        status: 201,
-        status_type: "Created",
-        message: `Successfully Created Role: ${req.body.role}`,
-      })
-    }
+    if (roleExist) throw "Unable to create role, role already exist!";
 
+    await Role.create({ name: req.body.role, level: req.body.level});
+
+    return res.status(201).json({
+      status: 201,
+      status_type: "Created",
+      message: `Successfully Created Role: ${req.body.role}`,
+    })
+  }
+  catch(err) {
     return res.status(403).json({
       status: 403,
       status_type: "Forbidden",
-      message: "Unable to create role, role already exist",
-    })
-
+      message: "Unable to create role",
+      err: String(err)
+    });
   }
-
-  return res.status(401).json({
-    status: 401,
-    status_type: "Unauthorized",
-    message: "Not permission to create role"
-  })
 });
 
 router.put("/role", authentication, isStaff, async (req, res, next) => {
 
-  const userRoleCheck = checkUserRole(jwt.verify(req.session.token, process.env.TOKEN_SECRET).username, req.body.role);
+  try {
+    const userRoleCheck = checkUserRole(jwt.verify(req.session.token, process.env.TOKEN_SECRET).username, req.body.role);
 
-  if (userRoleCheck !== NaN && userRoleCheck > req.body.level) {
+    if (userRoleCheck === NaN) throw "Something went wrong!";
+    if (userRoleCheck < req.body.level) throw "You dont have permission!";
 
     const roleExist = await Role.findOne({ where: { name : req.body.role} });
 
-    if (roleExist) {
-      await Role.update({ name: req.body.newName, level: req.body.newLevel }, {
-        where: {
-          name: req.body.role
-        }
-      });
+    if (!roleExist) throw "Unable to update role, role does not exist!";
 
-      return res.status(201).json({
-        status: 201,
-        status_type: "OK",
-        message: "Successfully updated role",
-        role: req.body.role
-      })
-    }
-
-    return res.status(403).json({
-      status: 403,
-      status_type: "Forbidden",
-      message: "Unable to update role, role does not exist",
+    await Role.update({ name: req.body.newName, level: req.body.newLevel }, {
+      where: { name: req.body.role }
     });
 
+    return res.status(201).json({
+      status: 201,
+      status_type: "OK",
+      message: "Successfully updated role",
+      role: req.body.role
+    })
 
   }
 
-  return res.status(401).json({
-    status: 401,
-    status_type: "Unauthorized",
-    message: "Not permission to update role"
-  })
+  catch(err) {
+    return res.status(403).json({
+      status: 403,
+      status_type: "Forbidden",
+      message: "Unable to update role",
+      err: String(err)
+    });
+  }
 
 });
 
 router.delete("/role", authentication, isStaff, async (req, res, next) => {
 
-  const userRoleCheck = await checkUserRole(jwt.verify(req.session.token, process.env.TOKEN_SECRET).username, req.body.role);
+  try {
+    const userRoleCheck = await checkUserRole(jwt.verify(req.session.token, process.env.TOKEN_SECRET).username, req.body.role);
 
-  if (userRoleCheck !== NaN) {
+    if (userRoleCheck === NaN) throw "Something went wrong!";
+    if (userRoleCheck < req.body.level) throw "You dont have permission!";
 
     const roleExist = await Role.findOne({ where: { name : req.body.role} });
 
-    if (roleExist) {
-      await Role.destroy({ where: {name: req.body.role} });
-      return res.status(201).json({
-        status: 201,
-        status_type: "OK",
-        message: `Successfully Deleted Role: ${req.body.role}`,
-      })
-    }
+    if (!roleExist) throw "Unable to delete role, role does not exist!";
 
-    return res.status(403).json({
-      status: 403,
-      status_type: "Forbidden",
-      message: "Unable to delete role, role does not exist",
+    await Role.destroy({ where: {name: req.body.role} });
+    return res.status(201).json({
+      status: 201,
+      status_type: "OK",
+      message: `Successfully Deleted Role: ${req.body.role}`,
     })
 
   }
-
-  return res.status(401).json({
-    status : 401,
-    status_type: "Unauthorized",
-    message: "Not Permission to delete role"
-  })
+  catch(err) {
+    return res.status(403).json({
+      status: 403,
+      status_type: "Forbidden",
+      error: String(err)
+    })
+  }
 
 });
 
