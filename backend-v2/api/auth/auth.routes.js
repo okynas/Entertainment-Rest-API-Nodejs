@@ -88,7 +88,30 @@ router.put("/users", authentication, async (req, res, next) => {
 });
 
 router.delete("/users", authentication, async (req, res, next) => {
+  try {
+    const currentUser = jwt.verify(req.session.token, process.env.TOKEN_SECRET).username;
+    const userExist = await findUser(currentUser);
 
+    if (!userExist) throw "Unable to delete user, user does not exist!";
+
+    await User.destroy({ where: {username: currentUser} });
+
+    req.session.token = null;
+
+    return res.status(201).json({
+      status: 201,
+      status_type: "OK",
+      message: `Successfully Deleted User: ${currentUser}`,
+    })
+  }
+
+  catch(err) {
+    return res.status(403).json({
+      status: 403,
+      status_type: "Forbidden",
+      error: String(err)
+    });
+  }
 });
 
 // ####################################
