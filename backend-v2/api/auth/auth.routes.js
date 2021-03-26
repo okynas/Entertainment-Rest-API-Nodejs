@@ -10,18 +10,33 @@ const Role = sequelize.Role;
 
 router.get("/users", authentication, isStaff, async (req, res, next) => {
 
-  var allUsers = await User.findAll({
-    attributes: {
-      exclude: ["password", 'roleId']
-    },
-    include: ["role"]
-  });
+  try {
+    var allUsers = await User.findAll({
+      attributes: {
+        exclude: ["password", 'roleId']
+      },
+      include: ["role"]
+    });
 
-  return res.status(200).json({
-    status: 200,
-    message: "Showing all users",
-    allUsers
-  });
+    if (!allUsers) throw "No users to query!"
+
+    return res.status(200).json({
+      status: 200,
+      status_type: "OK",
+      message: "Showing all users",
+      allUsers
+    });
+  }
+
+  catch(err) {
+    return res.status(400).json({
+      status: 400,
+      status_type: "Bad Request",
+      error: String(err),
+    });
+  }
+
+
 
 });
 
@@ -43,6 +58,7 @@ router.put("/users", authentication, async (req, res, next) => {
 
   return res.status(201).json({
     status: 201,
+    status_type: "Created",
     message: "Successfully updated role",
     user: req.body.username
   });
@@ -64,6 +80,7 @@ router.get("/profile", authentication, async (req, res, next) => {
 
   return res.status(200).json({
     status: 200,
+    status_type: "OK",
     message: "You have come to the private route 🙊",
     user: fullUser
   })
@@ -83,6 +100,7 @@ router.post("/login", alreadyLoggedIn, userExist, async (req, res, next) => {
   return res.status(200)
     .json({
       status: 200,
+      status_type: "OK",
       user: userToCheck,
       token: token
     });
@@ -129,6 +147,7 @@ router.post("/logout", (req, res, next) => {
 
     return res.status(201).json({
       status: 201,
+      status_type: "Created",
       message: "Logged out successfully"
     });
 
@@ -136,6 +155,7 @@ router.post("/logout", (req, res, next) => {
 
   return res.status(400).json({
     status: 400,
+    status_type: "Bad Request",
     message: "Logging out failed!"
   })
 
@@ -146,9 +166,19 @@ router.post("/logout", (req, res, next) => {
 // ####################################
 
 router.get("/roles", authentication, isStaff, async (req, res, next) => {
-  const allRoles = await Role.findAll();
+
+  const allRoles = await Role.findAll(
+    {
+      order: [
+        ['level', 'ASC'],
+        ['name', 'ASC']
+      ]
+    }
+  );
+
   return res.status(200).json({
     status: 200,
+    status_type: "OK",
     message: "Showing all roles",
     roles: allRoles
   })
@@ -159,6 +189,7 @@ router.get("/roles/:name", async (req, res, next) => {
   const allRoles = await Role.findAll({where: {name: nameToCheck}});
   return res.status(200).json({
     status: 200,
+    status_type: "OK",
     message: "Showing all roles",
     roles: allRoles
   })
@@ -175,12 +206,14 @@ router.post("/role", authentication, isStaff, async (req, res, next) => {
       await Role.create({ name: req.body.role, level: req.body.level});
       return res.status(201).json({
         status: 201,
+        status_type: "Created",
         message: `Successfully Created Role: ${req.body.role}`,
       })
     }
 
     return res.status(403).json({
       status: 403,
+      status_type: "Forbidden",
       message: "Unable to create role, role already exist",
     })
 
@@ -188,6 +221,7 @@ router.post("/role", authentication, isStaff, async (req, res, next) => {
 
   return res.status(401).json({
     status: 401,
+    status_type: "Unauthorized",
     message: "Not permission to create role"
   })
 });
@@ -209,6 +243,7 @@ router.put("/role", authentication, isStaff, async (req, res, next) => {
 
       return res.status(201).json({
         status: 201,
+        status_type: "OK",
         message: "Successfully updated role",
         role: req.body.role
       })
@@ -216,6 +251,7 @@ router.put("/role", authentication, isStaff, async (req, res, next) => {
 
     return res.status(403).json({
       status: 403,
+      status_type: "Forbidden",
       message: "Unable to update role, role does not exist",
     });
 
@@ -224,6 +260,7 @@ router.put("/role", authentication, isStaff, async (req, res, next) => {
 
   return res.status(401).json({
     status: 401,
+    status_type: "Unauthorized",
     message: "Not permission to update role"
   })
 
@@ -241,12 +278,14 @@ router.delete("/role", authentication, isStaff, async (req, res, next) => {
       await Role.destroy({ where: {name: req.body.role} });
       return res.status(201).json({
         status: 201,
+        status_type: "OK",
         message: `Successfully Deleted Role: ${req.body.role}`,
       })
     }
 
     return res.status(403).json({
       status: 403,
+      status_type: "Forbidden",
       message: "Unable to delete role, role does not exist",
     })
 
@@ -254,6 +293,7 @@ router.delete("/role", authentication, isStaff, async (req, res, next) => {
 
   return res.status(401).json({
     status : 401,
+    status_type: "Unauthorized",
     message: "Not Permission to delete role"
   })
 
