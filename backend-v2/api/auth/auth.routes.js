@@ -11,7 +11,9 @@ const Role = sequelize.Role;
 router.get("/users", authentication, isStaff, async (req, res, next) => {
 
   var allUsers = await User.findAll({
-    attributes: { exclude: ["password"] },
+    attributes: {
+      exclude: ["password", 'roleId']
+    },
     include: ["role"]
   });
 
@@ -19,33 +21,33 @@ router.get("/users", authentication, isStaff, async (req, res, next) => {
     status: 200,
     message: "Showing all users",
     allUsers
-  })
+  });
 
 });
 
 //  TODO:
-// router.put("/users", authentication, async (req, res, next) => {
-//   const user = await User.update(
-//     {
-//       email: req.body.email,
-//       first_name: req.body.first_name,
-//       last_name: req.body.last_name,
-//       gender: req.body.gender
-//     },
-//     {
-//       where: {
-//         username: req.body.username
-//       }
-//     }
-//   );
+router.put("/users", authentication, async (req, res, next) => {
+  const user = await User.update(
+    {
+      email: req.body.email,
+      first_name: req.body.first_name,
+      last_name: req.body.last_name,
+      gender: req.body.gender
+    },
+    {
+      where: {
+        username: req.body.username
+      }
+    }
+  );
 
-//   return res.status(201).json({
-//     status: 201,
-//     message: "Successfully updated role",
-//     user: req.body.username
-//   });
+  return res.status(201).json({
+    status: 201,
+    message: "Successfully updated role",
+    user: req.body.username
+  });
 
-// });
+});
 
 // ####################################
 // Authenticated Profile
@@ -113,23 +115,25 @@ router.post("/signup", alreadyLoggedIn, async (req, res, next) => {
     "roleId": 1
   })
 
-  res.json({
-    createdUser
-  })
+  return res.json(createdUser);
 
 });
 
 // ####################################
 // Logout
 // ####################################
+
 router.post("/logout", (req, res, next) => {
   if (req.session.token) {
     req.session.token = undefined;
+
     return res.status(201).json({
       status: 201,
       message: "Logged out successfully"
-    })
+    });
+
   }
+
   return res.status(400).json({
     status: 400,
     message: "Logging out failed!"

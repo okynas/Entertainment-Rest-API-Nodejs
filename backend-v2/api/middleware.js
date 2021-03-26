@@ -14,15 +14,13 @@ module.exports.createAccessToken = function (username) {
 
 module.exports.authentication = function(req, res, next) {
   if (req.session.token) {
-    next();
+    return next();
   }
 
-  else {
-    return res.status(401).json({
-      status: 401,
-      message: "Unauthorized"
-    })
-  }
+  return res.status(401).json({
+    status: 401,
+    message: "Unauthorized"
+  })
 }
 
 module.exports.alreadyLoggedIn = async function(req, res, next) {
@@ -33,73 +31,99 @@ module.exports.alreadyLoggedIn = async function(req, res, next) {
       message: "Already logged in"
     })
   }
-
-  next();
+  else {
+    next();
+  }
 }
 
 module.exports.isStaff = async function(req, res, next) {
 
-  const userToCheck = await User.findOne({
-    where: {username: jwt.verify(req.session.token, process.env.TOKEN_SECRET).username},
-    include: ["role"]
-  })
+  try {
+    const userToCheck = await User.findOne({
+      where: {username: jwt.verify(req.session.token, process.env.TOKEN_SECRET).username},
+      include: ["role"]
+    })
 
-  const rolleId = userToCheck["role"]["id"];
+    const rolleId = userToCheck["role"]["id"];
 
-  if (rolleId >= 2) {
-    next();
-  } else {
+    if (rolleId >= 2) {
+      return next();
+    }
+
+    throw "Unauthorized"
+
+  }
+  catch(err) {
     return res.status(401).json({
       status: 401,
-      message: "Unauthorized"
+      error: String(err)
     })
   }
+
+
 }
 
 module.exports.userExist = async function(req, res, next) {
-  const key = crypto.pbkdf2Sync(req.body.password, "salt", 100000, 102, "sha512")
 
-  const userToCheck = await User.findOne({
-    where: {
-      [Op.and] : [
-        {username: req.body.username},
-        {email: req.body.email},
-        {password: key.toString("hex")},
-      ]
+  try {
+    const key = crypto.pbkdf2Sync(req.body.password, "salt", 100000, 102, "sha512");
+    const userToCheck = await User.findOne({
+      where: {
+        [Op.and] : [
+          {username: req.body.username},
+          {email: req.body.email},
+          {password: key.toString("hex")},
+        ]
+      }
+    });
+
+    if (userToCheck) {
+      return next();
     }
-  });
 
-  if (userToCheck !== null) {
-    next();
+    throw "User not found";
   }
 
-  else {
+  catch(err) {
     return res.status(404).json({
       status: 404,
-      message: "User not found"
+      error: err
     })
   }
+
 }
 
 module.exports.findUser = async function(username) {
-  const userToCheck = await User.findOne({
-    where: { username: username },
-    attributes: { exclude: ["password"] },
-    include: ["role"]
-  })
 
-  return userToCheck;
+  try {
+    const userToCheck = await User.findOne({
+      where: { username: username },
+      attributes: { exclude: ["password"] },
+      include: ["role"]
+    });
+
+    if (userToCheck) return userToCheck;
+
+    throw "User does not exist"
+  }
+
+  catch(err) {
+    return null;
+  }
+
+
 }
 
 module.exports.findUserAndLogIn = async function(username, email, password) {
   const key = crypto.pbkdf2Sync(password, "salt", 100000, 102, "sha512")
+
   const userToCheck = await User.findOne({
     where: {
       [Op.and] : [
         {username: username},
         {email: email},
         {password: key.toString("hex")},
-      ]
+      ],
     },
     attributes: {
       exclude: ["password"]

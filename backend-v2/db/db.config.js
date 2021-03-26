@@ -84,12 +84,13 @@ const Role = sequelize.define("role", {
     unique: true
   },
   name: {
-    type: Sequelize.ENUM('Admin', 'Moderator', 'User'),
+    // type: Sequelize.ENUM('Admin', 'Moderator', 'User'),
+    type: Sequelize.STRING,
     allowNull: false,
     unique: true,
-    validate: {
-      isIn: [['Admin', 'Moderator', 'User']]
-    }
+    // validate: {
+    //   isIn: [['Admin', 'Moderator', 'User']]
+    // }
   },
   level: {
     type: Sequelize.INTEGER,
