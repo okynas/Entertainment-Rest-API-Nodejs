@@ -124,12 +124,10 @@ const Actor = sequelize.define("actor", {
   first_name: {
     type: Sequelize.STRING,
     allowNull: false,
-    unique: true,
   },
   last_name: {
     type: Sequelize.STRING,
     allowNull: false,
-    unique: true,
   },
   bio: {
     type: Sequelize.STRING,
@@ -425,6 +423,17 @@ sequelize.sync({fouce: true})
   //   "name": "Admin",
   //   "level": 3
   // });
+  // User.create({
+  //  "username": "admin",
+  //  "email": "admin@gmail.com",
+  //  "first_name": "stian",
+  //  "last_name": "martinsen",
+  //  "gender": "Male",
+  //  "password": "d8da308ccd0cf4c331521fc8f8771507e65e9981de1959e0c76e035291024b1e6b18b9623f751acb470e2b38506066e216a5259f530817674f19f24501ca10342536df7bc27901001890b87e429007d6e5e4a937776d44145a9df54631fde19a6aa5baf9c9fe",
+  //  "createdAt": "2021-03-26T19:24:11.910Z",
+  //  "updatedAt": "2021-03-26T19:24:11.911Z",
+  //  "roleId": 3
+  // });
 
   // Actor.create({
   //   "id": 1,
@@ -432,18 +441,6 @@ sequelize.sync({fouce: true})
   //   "last_name": "Martinsen",
   //   "bio": "HI' im me 🔥",
   //   "birthdate": Date.now()
-  // });
-
-  //User.create({
-  //  "username": "admin",
-  //  "email": "admin@gmail.com",
-  //  "first_name": "stian",
-  //  "last_name": "martinsen",
-  //  "gender": "Male",
-  //  //password": "d8da308ccd0cf4c331521fc8f8771507e65e9981de1959e0c76e035291024b1e6b18b9623f751acb470e2b38506066e216a5259f530817674f19f24501ca10342536df7bc27901001890b87e429007d6e5e4a937776d44145a9df54631fde19a6aa5baf9c9fe",
-  //  "createdAt": "2021-03-26T19:24:11.910Z",
-  //  "updatedAt": "2021-03-26T19:24:11.911Z",
-  //  "roleId": 3
   // });
 
   // Language.create({

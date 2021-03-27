@@ -59,7 +59,8 @@ router.put("/users", authentication, async (req, res, next) => {
     if (req.body.first_name) valuesToUpdate.first_name = req.body.first_name;
     if (req.body.last_name) valuesToUpdate.last_name = req.body.last_name;
     if (req.body.gender) valuesToUpdate.gender = req.body.gender;
-    if (req.body.newUsername) valuesToUpdate.username = req.body.newUsername;
+
+    // if (req.body.newUsername) valuesToUpdate.username = req.body.newUsername; // Update username? Should this be possible?
 
     //  If your permission is 2 or higher
     if (levelTwoOrHigher && levelTwoOrHigher < req.body.roleId) throw "You cant create a user with higher permission than yourself!";
@@ -339,7 +340,12 @@ router.put("/role", authentication, isStaff, async (req, res, next) => {
 
     if (!roleExist) throw "Unable to update role, role does not exist!";
 
-    await Role.update({ name: req.body.newName, level: req.body.newLevel }, {
+    const valuesToUpdate = { name: null, level: null };
+
+    if (req.body.newName) valuesToUpdate.name = req.body.newName;
+    if (req.body.newLevel) valuesToUpdate.level = req.body.newLevel;
+
+    await Role.update(valuesToUpdate, {
       where: { name: req.body.role }
     });
 

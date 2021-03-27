@@ -1,4 +1,4 @@
-const {authentication, isStaff} = require("../middleware");
+const {authentication, isStaff, splitPersonName, FindOneActor} = require("../middleware");
 
 const express = require("express");
 const router = express.Router();
@@ -13,6 +13,11 @@ const Show = sequelize.Show;
 const Genre = sequelize.Genre;
 const Season = sequelize.Season;
 const Episode = sequelize.Episode;
+
+
+// ==============================>>
+//            ACTORS
+// ==============================>>
 
 router.get("/actors", async (req, res, next) => {
 
@@ -39,29 +44,8 @@ router.get("/actors", async (req, res, next) => {
 router.get("/actors/:name", async (req, res, next) => {
 
   try {
-    const actorName = req.params.name;
-    const split = actorName.split(" ");
-    const antallNavn = split.length;
-    var actor;
-
-    if (antallNavn > 1) {
-      let first_name = split[0]
-      let last_name = split[antallNavn - 1]
-
-      actor = await Actor.findOne({
-        where: {
-          [Op.or]: [
-            {first_name: first_name },
-            {last_name: last_name }
-          ]
-        }
-      });
-
-    } else {
-      actor = await Actor.findOne({
-        where: { first_name: actorName }
-      });
-    }
+    const {firstName, lastName} = splitPersonName(req.params.name);
+    const actor = await FindOneActor(firstName, lastName);
 
     if (!actor) throw "Actor not found";
 
@@ -69,7 +53,7 @@ router.get("/actors/:name", async (req, res, next) => {
       status: 200,
       message: "Getting one actor",
       actor: actor,
-    })
+    });
   }
   catch(err) {
     return res.status(400).json({
@@ -79,15 +63,130 @@ router.get("/actors/:name", async (req, res, next) => {
     })
   }
 
-
-
 });
+
+router.post("/actors", authentication, async (req, res, next) => {
+  try {
+    if (!req.body.first_name) throw "Please supply with firstname to create actor";
+    if (!req.body.last_name) throw "Please supply with lastname to create actor";
+
+    const findActor = await FindOneActor(req.body.first_name, req.body.last_name);
+
+    if (findActor) throw "Can't create actor. Actor already exists!";
+
+    await Actor.create({
+      "first_name": req.body.first_name,
+      "last_name": req.body.last_name,
+      "bio": req.body.bio,
+      "birthdate": Date.now()
+    });
+
+    return res.status(201).json({
+      status: 201,
+      status_type: "Created",
+      message: "Created actor",
+    });
+  }
+  catch (err) {
+    return res.status(400).json({
+      status: 400,
+      message: "Error",
+      error: String(err)
+    })
+  }
+});
+
+router.put("/actors", authentication, isStaff, async (req, res, next) => {
+  try {
+
+    if (!req.body.first_name) throw "Please provide firstname";
+    if (!req.body.last_name) throw "Please provide lastname";
+
+    const findActor = await FindOneActor(req.body.first_name, req.body.last_name);
+
+    if (!findActor) throw "Can't update actor. Actor does not exists!";
+
+    const valuesToUpdate = {
+      first_name: null,
+      last_name: null,
+      bio: null,
+      birthdate: null
+    };
+
+    if (req.body.first_name) valuesToUpdate.first_name = req.body.first_name;
+    if (req.body.last_name) valuesToUpdate.last_name = req.body.last_name;
+    if (req.body.bio) valuesToUpdate.bio = req.body.bio;
+    if (req.body.birthdate) {
+
+      let dateTime = Date.parse(req.body.birthdate)
+
+      if (dateTime === NaN) throw "Birthdate is not valid!";
+
+      valuesToUpdate.birthdate = new Date(req.body.birthdate)
+    }
+
+    await Actor.update(valuesToUpdate, {
+      where: {id: req.body.id}
+    });
+
+    return res.status(201).json({
+      status: 201,
+      status_type: "Created",
+      message: "Created actor",
+    });
+  }
+  catch (err) {
+    return res.status(400).json({
+      status: 400,
+      message: "Error",
+      error: String(err)
+    })
+  }
+});
+
+router.delete("/actors", authentication, isStaff, async (req, res, next) => {
+
+  try {
+    if (!req.body.first_name) throw "Please supply with firstname to delete actor";
+    if (!req.body.last_name) throw "Please supply with lastname to delete actor";
+
+    const findActor = await FindOneActor(req.body.first_name, req.body.last_name );
+
+    if (!findActor) throw "Could not delete actor, it does not exists!";
+
+    await Actor.destroy({
+      where: {
+        [Op.and]: [
+          {first_name:  findActor.first_name},
+          {last_name: findActor.last_name}
+        ]
+      }
+    });
+
+    return res.status(201).json({
+      status: 201,
+      status_type: "Created",
+      message: "Deleted successfully",
+    });
+  }
+  catch (err) {
+    return res.status(400).json({
+      status: 400,
+      message: "Error",
+      error: String(err)
+    })
+  }
+});
+
+// ==============================>>
+//           LANGUAGES
+// ==============================>>
 
 router.get("/language", async (req, res, next) => {
   try {
     const languages = await Language.findAll();
 
-    if (!languages) throw "Languages not found";
+    if (!languages || languages.length === 0) throw "Languages not found";
 
     return res.status(200).json({
       status: 200,
@@ -105,16 +204,21 @@ router.get("/language", async (req, res, next) => {
 
 });
 
-router.get("/genre", async (req, res, next) => {
+router.post("/language", async (req, res, next) => {
   try {
-    const genres = await Genre.findAll();
 
-    if (!genres) throw "Genres not found";
+    if (!req.body.language) throw "Please give the language a name, title or langauge";
 
-    return res.status(200).json({
-      status: 200,
-      message: "Getting all genres",
-      genre: genres
+    const lang = await Language.findOne({where: {language : req.body.language}});
+
+    if (lang) throw "Can't create language, it already exists!";
+
+    await Language.create({language: req.body.language});
+
+    return res.status(201).json({
+      status: 201,
+      status_type: "Created",
+      message: "Successfully created language!",
     });
   }
   catch(err) {
@@ -124,8 +228,194 @@ router.get("/genre", async (req, res, next) => {
       error: String(err)
     });
   }
+});
+
+router.put("/language", authentication, isStaff, async (req, res, next) => {
+  try {
+
+    if (!req.body.newLanguage) throw "Please provide the new language name!";
+    if (!req.body.language) throw "Please provide the old language name to the language to update!";
+
+    const lang = await Language.findOne({where: {language : req.body.language}});
+
+    if (!lang) throw "Can't update language, it does not exists!";
+
+    const valuesToUpdate = {
+      language: null
+    }
+
+    if (req.body.newLanguage) valuesToUpdate.language = req.body.newLanguage;
+
+    await Language.update(valuesToUpdate,
+      { where: {language : req.body.language }
+    });
+
+    return res.status(201).json({
+      status: 201,
+      status_type: "Created",
+      message: "Successfully update language!",
+    });
+  }
+
+  catch(err) {
+    return res.status(400).json({
+      status: 400,
+      status_type: "Bad Request",
+      message: "Error",
+      error: String(err)
+    });
+  }
+});
+
+router.delete("/language", authentication, isStaff, async (req, res, next) => {
+  try {
+
+    if (!req.body.language) throw "Please provide the language name to delete";
+
+    const lang = await Language.findOne({where: {language : req.body.language}});
+
+    if (!lang) throw "Can't delete language, it does not exists!";
+
+    await Language.destroy({ where: {language : req.body.language }});
+
+    return res.status(201).json({
+      status: 201,
+      status_type: "Created",
+      message: "Successfully deleted language!",
+    });
+  }
+
+  catch(err) {
+    return res.status(400).json({
+      status: 400,
+      status_type: "Bad Request",
+      message: "Error",
+      error: String(err)
+    });
+  }
+});
+
+// ==============================>>
+//            GENRE
+// ==============================>>
+
+router.get("/genre", async (req, res, next) => {
+  try {
+    const genres = await Genre.findAll();
+
+    if (!genres || genres.languages === 0) throw "Genres not found";
+
+    return res.status(200).json({
+      status: 200,
+      status_type: "OK",
+      message: "Getting all genres",
+      genre: genres
+    });
+  }
+  catch(err) {
+    return res.status(400).json({
+      status: 400,
+      status_type: "Bad Request",
+      message: "Error",
+      error: String(err)
+    });
+  }
 
 });
+
+router.post("/genre", async (req, res, next) => {
+  try {
+    const genres = await Genre.findOne({where: {genre: req.body.genre}});
+
+    if (genres) throw "Can't create genre, it already exists!";
+
+    await Genre.create({genre: req.body.genre});
+
+    return res.status(200).json({
+      status: 201,
+      status_type: "Created",
+      message: "Successfully created genre!",
+    });
+  }
+  catch(err) {
+    return res.status(400).json({
+      status: 400,
+      status_type: "Bad Request",
+      message: "Error",
+      error: String(err)
+    });
+  }
+
+});
+
+router.put("/genre", authentication, isStaff, async (req, res, next) => {
+  try {
+
+    if (!req.body.newGenre) throw "Please provide name for new genre";
+    if (!req.body.genre) throw "Please provide name for old genre";
+
+    const genres = await Genre.findOne({where: {genre: req.body.genre}});
+
+    if (!genres) throw "Can't update genre, it does not exist!";
+
+    const valuesToUpdate = {
+      genre: null
+    }
+
+    if (req.body.newGenre) valuesToUpdate.genre = req.body.newGenre;
+
+    await Genre.update(valuesToUpdate,
+      { where :{genre: req.body.genre} }
+    );
+
+    return res.status(200).json({
+      status: 201,
+      status_type: "Created",
+      message: "Successfully updated genre!",
+    });
+  }
+  catch(err) {
+    return res.status(400).json({
+      status: 400,
+      status_type: "Bad Request",
+      message: "Error",
+      error: String(err)
+    });
+  }
+
+});
+
+router.delete("/genre", authentication, isStaff, async (req, res, next) => {
+  try {
+    if (!req.body.genre) throw "Please provide name for genre";
+
+    const genres = await Genre.findOne({where: {genre: req.body.genre}});
+
+    if (!genres) throw "Can't delete genre, it does not exist!";
+
+    await Genre.destroy({ where :{genre: req.body.genre} }
+    );
+
+    return res.status(200).json({
+      status: 201,
+      status_type: "Created",
+      message: "Successfully deleted genre!",
+    });
+  }
+  catch(err) {
+    return res.status(400).json({
+      status: 400,
+      status_type: "Bad Request",
+      message: "Error",
+      error: String(err)
+    });
+  }
+
+});
+
+// ==============================>>
+//            FILM
+// ==============================>>
 
 router.get("/film", async (req, res, next) => {
 
@@ -158,10 +448,11 @@ router.get("/film", async (req, res, next) => {
       ],
     });
 
-    if (!films) throw "films not found"
+    if (!films || films.length === 0) throw "films not found"
 
     return res.status(200).json({
       status: 200,
+      status_type: "OK",
       message: "Retrieving all films ✨",
       films: films
     });
@@ -169,12 +460,17 @@ router.get("/film", async (req, res, next) => {
   catch (err) {
     return res.status(400).json({
       status: 400,
+      status_type: "Bad Request",
       message: "Error",
       error: String(err)
     })
   }
 
 });
+
+// ==============================>>
+//             SHOW
+// ==============================>>
 
 router.get("/show", async (req, res, next) => {
   try {
@@ -216,7 +512,7 @@ router.get("/show", async (req, res, next) => {
       ],
     });
 
-    if (!shows) throw new Error("Film not found");
+    if (!shows || shows.length === 0) throw new Error("Film not found");
 
     return res.status(200).json({
       staus: 200,
@@ -234,13 +530,17 @@ router.get("/show", async (req, res, next) => {
 
 });
 
+// ==============================>>
+//            SEASON
+// ==============================>>
+
 router.get("/season", async (req, res, next) => {
   try {
     const season = await Season.findAll({
       attributes: ['seasonNumber', 'title', 'releasedate', 'description']
     });
 
-    if (!season) throw "Genres not found";
+    if (!season || season.length === 0) throw "Genres not found";
 
     return res.status(200).json({
       status: 200,
@@ -258,11 +558,15 @@ router.get("/season", async (req, res, next) => {
 
 });
 
+// ==============================>>
+//            EPISODE
+// ==============================>>
+
 router.get("/episodes", async (req, res, next) => {
   try {
     const ep = await Episode.findAll();
 
-    if (!ep) throw "Episodes not found";
+    if (!ep || ep.length === 0) throw "Episodes not found";
 
     return res.status(200).json({
       status: 200,

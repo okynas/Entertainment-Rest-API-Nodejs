@@ -4,8 +4,17 @@ const crypto = require("crypto");
 require('dotenv').config();
 
 const sequelize = require("../db/db.config");
+
 const User = sequelize.User;
 const Role = sequelize.Role;
+const Actor = sequelize.Actor;
+const Language = sequelize.Language;
+const Film = sequelize.Film;
+const Show = sequelize.Show;
+const Genre = sequelize.Genre;
+const Season = sequelize.Season;
+const Episode = sequelize.Episode;
+
 const { Op } = require("sequelize");
 
 module.exports.createAccessToken = function (username) {
@@ -189,4 +198,41 @@ module.exports.checkUserRole = async function(currentUser, userOrRoleToCheck) {
 module.exports.capitalizeFirst = function(string) {
   string = string.toLowerCase()
   return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+module.exports.splitPersonName = function(name) {
+  const splittedName = name.split(" ");
+
+  if (splittedName.length === 1)  return {firstName: name, lastName: null};
+
+  const firstName = splittedName[0];
+  const lastName = splittedName[splittedName.length - 1];
+
+  return {firstName: firstName, lastName: lastName}
+}
+
+module.exports.FindOneActor = async function(firstname, lastname) {
+  try {
+    if (lastname === null) {
+      return await Actor.findOne({
+        where: {
+          first_name: firstname
+        }
+      });
+    }
+
+    if (lastname) {
+      return await Actor.findOne({
+        where: {
+          [Op.or]: [
+            {first_name: firstname },
+            {last_name: lastname }
+          ]
+        }
+      });
+    }
+  }
+  catch(err) {
+    return null;
+  }
 }
