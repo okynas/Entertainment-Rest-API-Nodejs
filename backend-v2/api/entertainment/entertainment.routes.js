@@ -475,7 +475,7 @@ router.post("/film", authentication, isStaff, async (req, res, next) => {
 
     const film = await Film.findOne({ where: { title: req.body.title } });
 
-    if (!film) throw "Can't create film, it already exists!";
+    if (film) throw "Can't create film, it already exists!";
 
     await Film.create({
       "title": req.body.title,
@@ -511,7 +511,7 @@ router.put("/film", authentication, isStaff, async (req, res, next) => {
 
     const film = await Film.findOne({ where: { title: req.body.title } });
 
-    if (!film) throw "Can't create film, it already exists!";
+    if (!film) throw "Can't update film, it doesnt exists!";
 
     const valuesToUpdate = {
       title: undefined,
@@ -558,7 +558,7 @@ router.delete("/film", async (req, res, next) => {
 
     const film = await Film.findOne({ where: { title: req.body.title } });
 
-    if (!film) throw "Can't create film, it already exists!";
+    if (!film) throw "Can't delete film, it already exists!";
 
     await Film.destroy({ where :{title: req.body.title} });
 
@@ -622,7 +622,7 @@ router.get("/show", async (req, res, next) => {
       ],
     });
 
-    if (!shows || shows.length === 0) throw new Error("Film not found");
+    if (!shows || shows.length === 0) throw new Error("Show not found");
 
     return res.status(200).json({
       staus: 200,
@@ -638,6 +638,116 @@ router.get("/show", async (req, res, next) => {
     });
   }
 
+});
+
+router.post("/show", authentication, isStaff, async (req, res, next) => {
+  try {
+
+    if (!req.body.title) throw "Please provide title!";
+
+    const show = await Show.findOne({ where: { title: req.body.title } });
+
+    if (show) throw "Can't create show, it already exists!";
+
+    await Show.create({
+      "title": req.body.title,
+      "poster": req.body.poster,
+      "description": req.body.description,
+      "releasedate": Date.now(),
+      "trailer": req.body.trailer,
+      "languageId": req.body.languageId,
+      "genreId": req.body.genreId,
+    });
+
+    return res.status(200).json({
+      status: 201,
+      status_type: "Created",
+      message: "Successfully created show!",
+    });
+  }
+  catch(err) {
+    return res.status(400).json({
+      status: 400,
+      status_type: "Bad Request",
+      message: "Error",
+      error: String(err)
+    });
+  }
+});
+
+router.put("/show", authentication, isStaff, async (req, res, next) => {
+  try {
+
+    if (!req.body.newTitle) throw "Please provide name for new title";
+    if (!req.body.title) throw "Please provide id or title!";
+
+    const show = await Show.findOne({ where: { title: req.body.title } });
+
+    if (!show) throw "Can't update show, it doesnt exists!";
+
+    const valuesToUpdate = {
+      title: undefined,
+      poster: undefined,
+      description: undefined,
+      releasedate: undefined,
+      trailer: undefined,
+      languageId: undefined,
+      genreId: undefined,
+    }
+
+    if (req.body.newTitle) valuesToUpdate.title = req.body.newTitle;
+    if (req.body.poster) valuesToUpdate.poster = req.body.poster;
+    if (req.body.description) valuesToUpdate.description = req.body.description;
+    if (req.body.releasedate) valuesToUpdate.releasedate =  Date.parse(req.body.releasedate);
+    if (req.body.trailer) valuesToUpdate.trailer = req.body.trailer;
+    if (req.body.languageId) valuesToUpdate.languageId = req.body.languageId;
+    if (req.body.genreId) valuesToUpdate.genreId = req.body.genreId;
+
+    await Show.update(valuesToUpdate,
+      { where :{title: req.body.title} }
+    );
+
+    return res.status(200).json({
+      status: 201,
+      status_type: "Created",
+      message: "Successfully update show!",
+    });
+  }
+  catch(err) {
+    return res.status(400).json({
+      status: 400,
+      status_type: "Bad Request",
+      message: "Error",
+      error: String(err)
+    });
+  }
+});
+
+router.delete("/show", authentication, isStaff, async (req, res, next) => {
+  try {
+
+    if (!req.body.title) throw "Please provide id or title!";
+
+    const show = await Show.findOne({ where: { title: req.body.title } });
+
+    if (!show) throw "Can't delete show, it already exists!";
+
+    await Show.destroy({ where :{title: req.body.title} });
+
+    return res.status(200).json({
+      status: 201,
+      status_type: "Created",
+      message: "Successfully deleted show!",
+    });
+  }
+  catch(err) {
+    return res.status(400).json({
+      status: 400,
+      status_type: "Bad Request",
+      message: "Error",
+      error: String(err)
+    });
+  }
 });
 
 // ==============================>>
