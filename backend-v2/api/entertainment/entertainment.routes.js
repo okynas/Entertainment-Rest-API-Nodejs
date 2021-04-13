@@ -126,7 +126,7 @@ router.put("/actors", authentication, isStaff, async (req, res, next) => {
     }
 
     await Actor.update(valuesToUpdate, {
-      where: {id: req.body.id}
+      where: {id: Number.parseInt(req.body.id)}
     });
 
     return res.status(201).json({
@@ -483,8 +483,8 @@ router.post("/film", authentication, isStaff, async (req, res, next) => {
       "description": req.body.description,
       "releasedate": Date.now(),
       "trailer": req.body.trailer,
-      "languageId": req.body.languageId,
-      "genreId": req.body.genreId,
+      "languageId": Number.parseInt(req.body.languageId),
+      "genreId": Number.parseInt(req.body.genreId),
     });
 
     return res.status(200).json({
@@ -506,7 +506,7 @@ router.post("/film", authentication, isStaff, async (req, res, next) => {
 router.put("/film", authentication, isStaff, async (req, res, next) => {
   try {
 
-    if (!req.body.newTitle) throw "Please provide name for new title";
+    // if (!req.body.newTitle) throw "Please provide name for new title";
     if (!req.body.title) throw "Please provide id or title!";
 
     const film = await Film.findOne({ where: { title: req.body.title } });
@@ -528,8 +528,8 @@ router.put("/film", authentication, isStaff, async (req, res, next) => {
     if (req.body.description) valuesToUpdate.description = req.body.description;
     if (req.body.releasedate) valuesToUpdate.releasedate =  Date.parse(req.body.releasedate);
     if (req.body.trailer) valuesToUpdate.trailer = req.body.trailer;
-    if (req.body.languageId) valuesToUpdate.languageId = req.body.languageId;
-    if (req.body.genreId) valuesToUpdate.genreId = req.body.genreId;
+    if (req.body.languageId) valuesToUpdate.languageId = Number.parseInt(req.body.languageId);
+    if (req.body.genreId) valuesToUpdate.genreId = Number.parseInt(req.body.genreId);
 
     await Film.update(valuesToUpdate,
       { where :{title: req.body.title} }
@@ -655,8 +655,8 @@ router.post("/show", authentication, isStaff, async (req, res, next) => {
       "description": req.body.description,
       "releasedate": Date.now(),
       "trailer": req.body.trailer,
-      "languageId": req.body.languageId,
-      "genreId": req.body.genreId,
+      "languageId": Number.parseInt(req.body.languageId),
+      "genreId": Number.parseInt(req.body.genreId),
     });
 
     return res.status(200).json({
@@ -678,7 +678,7 @@ router.post("/show", authentication, isStaff, async (req, res, next) => {
 router.put("/show", authentication, isStaff, async (req, res, next) => {
   try {
 
-    if (!req.body.newTitle) throw "Please provide name for new title";
+    // if (!req.body.newTitle) throw "Please provide name for new title";
     if (!req.body.title) throw "Please provide id or title!";
 
     const show = await Show.findOne({ where: { title: req.body.title } });
@@ -700,8 +700,8 @@ router.put("/show", authentication, isStaff, async (req, res, next) => {
     if (req.body.description) valuesToUpdate.description = req.body.description;
     if (req.body.releasedate) valuesToUpdate.releasedate =  Date.parse(req.body.releasedate);
     if (req.body.trailer) valuesToUpdate.trailer = req.body.trailer;
-    if (req.body.languageId) valuesToUpdate.languageId = req.body.languageId;
-    if (req.body.genreId) valuesToUpdate.genreId = req.body.genreId;
+    if (req.body.languageId) valuesToUpdate.languageId = Number.parseInt(req.body.languageId);
+    if (req.body.genreId) valuesToUpdate.genreId = Number.parseInt(req.body.genreId);
 
     await Show.update(valuesToUpdate,
       { where :{title: req.body.title} }
@@ -757,10 +757,10 @@ router.delete("/show", authentication, isStaff, async (req, res, next) => {
 router.get("/season", async (req, res, next) => {
   try {
     const season = await Season.findAll({
-      attributes: ['seasonNumber', 'title', 'releasedate', 'description']
+      attributes: ['seasonNumber', 'title', 'releasedate', 'description', 'showId']
     });
 
-    if (!season || season.length === 0) throw "Genres not found";
+    if (!season || season.length === 0) throw "Season not found";
 
     return res.status(200).json({
       status: 200,
@@ -776,6 +776,128 @@ router.get("/season", async (req, res, next) => {
     });
   }
 
+});
+
+router.post("/season", authentication, isStaff, async (req, res, next) => {
+  try {
+
+    if (!req.body.title) throw "Please provide title!";
+
+    const season = await Season.findOne({ where: { title: req.body.title } });
+
+    if (season) throw "Can't create season, it already exists!";
+
+    await Season.create({
+      seasonNumber: req.body.seasonNumber,
+      title: req.body.title,
+      releasedate: Date.parse(req.body.releasedate),
+      description: req.body.description,
+      showId: Number.parseInt(req.body.showId),
+    });
+
+    return res.status(200).json({
+      status: 201,
+      status_type: "Created",
+      message: "Successfully created season!",
+    });
+  }
+  catch(err) {
+    return res.status(400).json({
+      status: 400,
+      status_type: "Bad Request",
+      message: "Error",
+      error: String(err)
+    });
+  }
+});
+
+router.put("/season", authentication, isStaff, async (req, res, next) => {
+  try {
+
+    // if (!req.body.newTitle) throw "Please provide name for new title";
+    if (!req.body.title) throw "Please provide id or title!";
+
+    const season = await Season.findOne({ where: { title: req.body.title } });
+
+    if (!season) throw "Can't update season, it doesnt exists!";
+
+    const valuesToUpdate = {
+      seasonNumber: undefined,
+      title: undefined,
+      releasedate: undefined,
+      description: undefined,
+      showId: undefined,
+    }
+
+    if (req.body.seasonNumber) valuesToUpdate.seasonNumber = Number.parseInt(req.body.seasonNumber);
+    if (req.body.newTitle) valuesToUpdate.title = req.body.newTitle;
+    if (req.body.description) valuesToUpdate.description = req.body.description;
+    if (req.body.releasedate) valuesToUpdate.releasedate =  new Date(req.body.releasedate);
+    if (req.body.showId) valuesToUpdate.showId = Number.parseInt(req.body.showId);
+
+    if (JSON.stringify(valuesToUpdate) == JSON.stringify(season)) throw "Can't update when all the values are the same.";
+
+    await Season.update(valuesToUpdate,
+      { where :{title: req.body.title} }
+    );
+
+    return res.status(200).json({
+      status: 201,
+      status_type: "Created",
+      message: "Successfully update season!",
+      season
+    });
+  }
+  catch(err) {
+    return res.status(400).json({
+      status: 400,
+      status_type: "Bad Request",
+      message: "Error",
+      error: String(err)
+    });
+  }
+});
+
+router.delete("/season", authentication, isStaff, async (req, res, next) => {
+  try {
+
+    if (!req.body.seasonNumber) throw "Please provide seasonNumber!";
+    if (!req.body.showId) throw "Please provide id to show";
+
+    const season = await Season.findOne({
+      where : {
+        [Op.and] : [
+          {seasonNumber: Number.parseInt(req.body.seasonNumber)} ,
+          {showId: Number.parseInt(req.body.showId)}
+        ]
+      }
+    });
+
+    if (!season) throw "Can't delete season, it already exists!";
+
+    await Season.destroy({
+      where : {
+        [Op.and] : [
+          {seasonNumber: Number.parseInt(req.body.seasonNumber)} ,
+          {showId: Number.parseInt(req.body.showId)}
+        ]
+      }
+    });
+
+    return res.status(200).json({
+      status: 201,
+      status_type: "Created",
+      message: "Successfully deleted season!",
+    });
+  }
+  catch(err) {
+    return res.status(400).json({
+      status: 400,
+      status_type: "Bad Request",
+      message: "Error",
+      error: String(err)
+    });
+  }
 });
 
 // ==============================>>
