@@ -372,6 +372,13 @@ const Episode = sequelize.define("episodes", {
       key: 'seasonNumber'
     }
   },
+  showId: {
+    type: Sequelize.INTEGER,
+    references: {
+      model: Show,
+      key: 'id'
+    }
+  }
 }, {
   timestamps: false
 });
