@@ -1,4 +1,4 @@
-const {authentication, isStaff, splitPersonName, FindOneActor} = require("../middleware");
+const {authentication, isStaff, splitPersonName, FindOneActor, findEpisode} = require("../middleware");
 
 const express = require("express");
 const router = express.Router();
@@ -593,7 +593,7 @@ router.get("/show", async (req, res, next) => {
           attributes: ['id', 'first_name', 'last_name', 'bio','birthdate'],
           through: {
             attributes: ['role'],
-            as: "roleInShow"
+            as: "role"
           }
         },
         {
@@ -616,7 +616,7 @@ router.get("/show", async (req, res, next) => {
           include: {
             model: Episode,
             as: "episodes",
-            attributes : ['id', 'title', 'description', 'releasedate', 'seasonNumber', 'length'],
+            attributes : ['id', 'title', 'description', 'releasedate', 'length', 'seasonSeasonNumber'],
           }
         }
       ],
@@ -929,25 +929,22 @@ router.get("/episodes", async (req, res, next) => {
 router.post("/episodes", authentication, isStaff, async (req, res, next) => {
   try {
 
-    if (!req.body.title) throw "Please provide title!";
+    const episode = await findEpisode(req.body.title, req.body.showId, req.body.seasonId);
+    if (episode) throw "Can't update episode, it doesnt exists!";
 
-    const season = await Season.findOne({ where: { title: req.body.title } });
-
-    if (season) throw "Can't create episode, it already exists!";
-
-    await Season.create({
+    await Episode.create({
       title: req.body.title,
       releasedate: Date.parse(req.body.releasedate),
       description: req.body.description,
       length: Number.parseInt(req.body.length),
-      seasonNumber: Number.parseInt(req.body.seasonNumber),
+      seasonId: Number.parseInt(req.body.seasonId),
       showId: Number.parseInt(req.body.showId),
     });
 
     return res.status(200).json({
       status: 201,
       status_type: "Created",
-      message: "Successfully created season!",
+      message: "Successfully created episode!",
     });
   }
   catch(err) {
@@ -960,40 +957,44 @@ router.post("/episodes", authentication, isStaff, async (req, res, next) => {
   }
 });
 
-router.put("/season", authentication, isStaff, async (req, res, next) => {
+router.put("/episodes", authentication, isStaff, async (req, res, next) => {
   try {
 
-    if (!req.body.title) throw "Please provide id or title!";
-
-    const season = await Season.findOne({ where: { title: req.body.title } });
-
-    if (!season) throw "Can't update season, it doesnt exists!";
+    const episode = await findEpisode(req.body.title, req.body.showId, req.body.seasonId);
+    if (!episode) throw "Can't update episode, it doesnt exists!";
 
     const valuesToUpdate = {
-      seasonNumber: undefined,
+      seasonId: undefined,
       title: undefined,
       releasedate: undefined,
       description: undefined,
       showId: undefined,
+      length: undefined
     }
 
-    if (req.body.seasonNumber) valuesToUpdate.seasonNumber = Number.parseInt(req.body.seasonNumber);
+    if (req.body.newSeasonId) valuesToUpdate.seasonId = Number.parseInt(req.body.newSeasonId);
     if (req.body.newTitle) valuesToUpdate.title = req.body.newTitle;
     if (req.body.description) valuesToUpdate.description = req.body.description;
     if (req.body.releasedate) valuesToUpdate.releasedate =  new Date(req.body.releasedate);
-    if (req.body.showId) valuesToUpdate.showId = Number.parseInt(req.body.showId);
+    if (req.body.newShowId) valuesToUpdate.showId = Number.parseInt(req.body.newShowId);
+    if (req.body.length) valuesToUpdate.length = Number.parseInt(req.body.length);
 
-    if (JSON.stringify(valuesToUpdate) == JSON.stringify(season)) throw "Can't update when all the values are the same.";
+    if (JSON.stringify(valuesToUpdate) == JSON.stringify(episode)) throw "Can't update when all the values are the same.";
 
-    await Season.update(valuesToUpdate,
-      { where :{title: req.body.title} }
+    await Episode.update(valuesToUpdate,
+      { where: {
+        [Op.and] : [
+          {showId: req.body.showId},
+          {seasonId: req.body.seasonId},
+          {title: req.body.title},
+        ]
+       } }
     );
 
     return res.status(200).json({
       status: 201,
       status_type: "Created",
-      message: "Successfully update season!",
-      season
+      message: "Successfully update episode!"
     });
   }
   catch(err) {
@@ -1006,46 +1007,46 @@ router.put("/season", authentication, isStaff, async (req, res, next) => {
   }
 });
 
-router.delete("/season", authentication, isStaff, async (req, res, next) => {
-  try {
+// router.delete("/season", authentication, isStaff, async (req, res, next) => {
+//   try {
 
-    if (!req.body.seasonNumber) throw "Please provide seasonNumber!";
-    if (!req.body.showId) throw "Please provide id to show";
+//     if (!req.body.seasonNumber) throw "Please provide seasonNumber!";
+//     if (!req.body.showId) throw "Please provide id to show";
 
-    const season = await Season.findOne({
-      where : {
-        [Op.and] : [
-          {seasonNumber: Number.parseInt(req.body.seasonNumber)} ,
-          {showId: Number.parseInt(req.body.showId)}
-        ]
-      }
-    });
+//     const season = await Season.findOne({
+//       where : {
+//         [Op.and] : [
+//           {seasonNumber: Number.parseInt(req.body.seasonNumber)} ,
+//           {showId: Number.parseInt(req.body.showId)}
+//         ]
+//       }
+//     });
 
-    if (!season) throw "Can't delete season, it already exists!";
+//     if (!season) throw "Can't delete season, it already exists!";
 
-    await Season.destroy({
-      where : {
-        [Op.and] : [
-          {seasonNumber: Number.parseInt(req.body.seasonNumber)} ,
-          {showId: Number.parseInt(req.body.showId)}
-        ]
-      }
-    });
+//     await Season.destroy({
+//       where : {
+//         [Op.and] : [
+//           {seasonNumber: Number.parseInt(req.body.seasonNumber)} ,
+//           {showId: Number.parseInt(req.body.showId)}
+//         ]
+//       }
+//     });
 
-    return res.status(200).json({
-      status: 201,
-      status_type: "Created",
-      message: "Successfully deleted season!",
-    });
-  }
-  catch(err) {
-    return res.status(400).json({
-      status: 400,
-      status_type: "Bad Request",
-      message: "Error",
-      error: String(err)
-    });
-  }
-});
+//     return res.status(200).json({
+//       status: 201,
+//       status_type: "Created",
+//       message: "Successfully deleted season!",
+//     });
+//   }
+//   catch(err) {
+//     return res.status(400).json({
+//       status: 400,
+//       status_type: "Bad Request",
+//       message: "Error",
+//       error: String(err)
+//     });
+//   }
+// });
 
 module.exports = router;

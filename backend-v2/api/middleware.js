@@ -241,3 +241,28 @@ module.exports.FindOneActor = async function(firstname, lastname) {
     return null;
   }
 }
+
+
+module.exports.findEpisode = async function(title, showId, seasonId) {
+  try {
+    if (!title) throw "Please provide title!";
+    if (!seasonId) throw "Please provide seasonId!";
+    if (!showId) throw "Please provide showId!";
+
+    const episode = await Episode.findOne({ where: {
+      [Op.and] : [
+        {showId: showId},
+        {seasonId: seasonId},
+        {title: title},
+      ]
+     } });
+
+    if (!episode) throw "Can't update episode, it doesnt exists!";
+
+    return episode;
+
+  } catch(err) {
+    return null;
+  }
+
+}

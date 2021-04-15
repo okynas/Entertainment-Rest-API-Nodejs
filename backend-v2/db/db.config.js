@@ -365,7 +365,7 @@ const Episode = sequelize.define("episodes", {
   length: {
     type: Sequelize.INTEGER
   },
-  seasonNumber: {
+  seasonId: {
     type: Sequelize.INTEGER,
     references: {
       model: Season,
@@ -410,7 +410,7 @@ Language.hasMany(Show, {as: "showLanguage"});
 Season.belongsTo(Show, {foreignKey: "showId", as: "shows"});
 Show.hasMany(Season, {as: 'seasons'});
 
-Episode.belongsTo(Season, {foreignKey: "seasonNumber", as: "season"});
+Episode.belongsTo(Season, {foreignKey: "seasonNumber", as: "seasons"});
 Season.hasMany(Episode, {as: 'episodes'});
 
 sequelize.sync({fouce: true})
@@ -496,12 +496,13 @@ sequelize.sync({fouce: true})
   // });
 
   // Episode.create({
-  //   id: 1,
-  //   seasonNumber: 1,
+  //   id: 2,
+  //   seasonId: 1,
   //   title: "Episode 1",
   //   releasedate: Date.now(),
   //   description: "beskrivelse",
   //   length: 155,
+  //   showId: 1,
   // });
 
   // Film_has_actors.create({
