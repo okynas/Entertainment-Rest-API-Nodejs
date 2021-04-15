@@ -116,9 +116,8 @@ User.belongsTo(Role, {
 
 const Actor = sequelize.define("actor", {
   id: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.BIGINT(15),
     primaryKey: true,
-    autoincrement: true,
     unique: true
   },
   first_name: {
@@ -127,27 +126,19 @@ const Actor = sequelize.define("actor", {
   },
   last_name: {
     type: Sequelize.STRING,
-    allowNull: false,
   },
   bio: {
     type: Sequelize.STRING,
   },
   birthdate: {
     type: Sequelize.DATE,
-    validate:{
-      isAfter: "1900-01-01",
-    }
   }
-}, {
-  timestamps: false
 });
 
 const Film = sequelize.define("film", {
   id: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.BIGINT(15),
     primaryKey: true,
-    autoincrement: true,
-    unique: true
   },
   title: {
     type: Sequelize.STRING,
@@ -156,33 +147,28 @@ const Film = sequelize.define("film", {
   },
   poster: {
     type: Sequelize.STRING,
-    allowNull: false,
-    unique: true,
   },
   description: {
     type: Sequelize.STRING,
-    validate:{
-      len: [2, 100]
-    }
+    // validate:{
+    //   len: [2, 100]
+    // }
   },
   releasedate: {
     type: Sequelize.DATE,
-    validate:{
-      isAfter: "1900-01-01",
-    }
+    // validate:{
+    //   isAfter: "1900-01-01",
+    // }
   },
   trailer: {
     type: Sequelize.STRING
   }
-}, {
-  timestamps: false
 });
 
 const Show = sequelize.define("show", {
   id: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.BIGINT(15),
     primaryKey: true,
-    autoincrement: true,
     unique: true
   },
   title: {
@@ -192,65 +178,56 @@ const Show = sequelize.define("show", {
   },
   poster: {
     type: Sequelize.STRING,
-    allowNull: false,
-    unique: true,
   },
   description: {
     type: Sequelize.STRING,
-    validate:{
-      len: [2, 100]
-    }
+    // validate:{
+    //   len: [2, 100]
+    // }
   },
   releasedate: {
     type: Sequelize.DATE,
-    validate:{
-      isAfter: "1900-01-01",
-    }
+    // validate:{
+    //   isAfter: "1900-01-01",
+    // }
   },
   trailer: {
     type: Sequelize.STRING
   }
-}, {
-  timestamps: false
 });
 
 
 const Language = sequelize.define("language", {
   id: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.BIGINT(15),
     primaryKey: true,
     autoincrement: true
   },
   language: {
     type: Sequelize.STRING
   }
-}, {
-  timestamps: false
 });
 
 const Genre = sequelize.define("genre", {
   id: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.BIGINT(15),
     primaryKey: true,
-    autoincrement: true
   },
   genre: {
     type: Sequelize.STRING
   }
-}, {
-  timestamps: false
 });
 
 const Film_has_actors = sequelize.define("film_has_actors", {
   actorId: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.BIGINT(15),
     references: {
       model: Actor,
       key: 'id'
     }
   },
   filmId:{
-    type: Sequelize.INTEGER,
+    type: Sequelize.BIGINT(15),
     references: {
       model: Film,
       key: 'id'
@@ -259,39 +236,35 @@ const Film_has_actors = sequelize.define("film_has_actors", {
   role: {
       type: Sequelize.STRING
   }
-}, {
-  timestamps: false
 });
 
 const Film_has_genre = sequelize.define("film_has_genre", {
   filmId:{
-    type: Sequelize.INTEGER,
+    type: Sequelize.BIGINT(15),
     references: {
       model: Film,
       key: 'id'
     }
   },
   genreId:{
-    type: Sequelize.INTEGER,
+    type: Sequelize.BIGINT(15),
     references: {
       model: Genre,
       key: 'id'
     }
   },
-}, {
-  timestamps: false
 });
 
 const Show_has_actors = sequelize.define("show_has_actors", {
   actorId: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.BIGINT(15),
     references: {
       model: Actor,
       key: 'id'
     }
   },
   showId:{
-    type: Sequelize.INTEGER,
+    type: Sequelize.BIGINT(15),
     references: {
       model: Film,
       key: 'id'
@@ -300,32 +273,28 @@ const Show_has_actors = sequelize.define("show_has_actors", {
   role: {
       type: Sequelize.STRING
   }
-}, {
-  timestamps: false
 });
 
 const Show_has_genre = sequelize.define("show_has_genre", {
   showId:{
-    type: Sequelize.INTEGER,
+    type: Sequelize.BIGINT(15),
     references: {
       model: Film,
       key: 'id'
     }
   },
   genreId:{
-    type: Sequelize.INTEGER,
+    type: Sequelize.BIGINT(15),
     references: {
       model: Genre,
       key: 'id'
     }
   },
-}, {
-  timestamps: false
 });
 
 const Season = sequelize.define("seasons", {
   id: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.BIGINT(15),
     primaryKey: true
   },
   title: {
@@ -338,19 +307,17 @@ const Season = sequelize.define("seasons", {
     type: Sequelize.STRING
   },
   showId: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.BIGINT(15),
     references: {
       model: Show,
       key: 'id'
     }
   }
-}, {
-  timestamps: false
 });
 
 const Episode = sequelize.define("episodes", {
   id: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.BIGINT(15),
     primaryKey: true
   },
   title: {
@@ -366,21 +333,19 @@ const Episode = sequelize.define("episodes", {
     type: Sequelize.INTEGER
   },
   seasonId: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.BIGINT(15),
     references: {
       model: Season,
       key: 'id'
     }
   },
   showId: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.BIGINT(15),
     references: {
       model: Show,
       key: 'id'
     }
   }
-}, {
-  timestamps: false
 });
 
 // ======== >= <= ========
@@ -536,13 +501,13 @@ module.exports = {
   Role,
   Actor,
   Language,
-  // Film_has_actors,
-  // Film_has_genre,
+  Film_has_actors,
+  Film_has_genre,
   Genre,
   Film,
   Show,
-  // Show_has_actors,
-  // Show_has_genre,
+  Show_has_actors,
+  Show_has_genre,
   Season,
   Episode
 };
