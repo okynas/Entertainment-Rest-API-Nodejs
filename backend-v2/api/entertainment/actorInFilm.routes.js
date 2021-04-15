@@ -5,6 +5,7 @@ const Actor = sequelize.Actor;
 const ActorsInFilm = sequelize.Film_has_actors;
 
 const express = require("express");
+const { Op } = require("sequelize");
 const router = express.Router();
 
 // ==============================>>
@@ -36,39 +37,49 @@ router.get("/", async (req, res, next) => {
 
 });
 
-// router.post("/", authentication, isStaff, async (req, res, next) => {
-//   try {
+router.post("/", /*authentication, isStaff,*/  async (req, res, next) => {
+  try {
 
-//     if (!req.body.title) throw "Please provide title!";
+    if (!req.body.filmId) throw "Please provide film id!";
+    if (!req.body.actorId) throw "Please provide actor id!";
+    if (!req.body.role) throw "Please provide role!";
 
-//     const film = await Film.findOne({ where: { title: req.body.title } });
+    const aif = await ActorsInFilm.findOne({
+      where: {
+        [Op.and] :[
+          { filmId: req.body.filmId },
+          { role: req.body.role },
+          { actorId: req.body.actorId },
+        ]
+      }
+    });
 
-//     if (film) throw "Can't create film, it already exists!";
+    if (aif) throw "Can't add actor to film, that combination already exist!";
 
-//     await Film.create({
-//       title: req.body.title,
-//       poster: req.body.poster,
-//       description: req.body.description,
-//       releasedate: Date.now(),
-//       trailer: req.body.trailer,
-//       languageId: Number.parseInt(req.body.languageId),
-//     });
+    // return res.json(aif)
 
-//     return res.status(200).json({
-//       status: 201,
-//       status_type: "Created",
-//       message: "Successfully created film!",
-//     });
-//   }
-//   catch(err) {
-//     return res.status(400).json({
-//       status: 400,
-//       status_type: "Bad Request",
-//       message: "Error",
-//       error: String(err)
-//     });
-//   }
-// });
+    const c = await ActorsInFilm.create({
+      "filmId": parseInt(req.body.filmId),
+      "role": req.body.role,
+      "actorId": parseInt(req.body.actorId),
+    });
+
+    return res.status(200).json({
+      status: 201,
+      status_type: "Created",
+      message: "Successfully added actor to film!",
+      c
+    });
+  }
+  catch(err) {
+    return res.status(400).json({
+      status: 400,
+      status_type: "Bad Request",
+      message: "Error",
+      error: String(err)
+    });
+  }
+});
 
 // router.put("/", authentication, isStaff, async (req, res, next) => {
 //   try {
