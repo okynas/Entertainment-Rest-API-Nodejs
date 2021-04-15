@@ -266,3 +266,25 @@ module.exports.findEpisode = async function(title, showId, seasonId) {
   }
 
 }
+
+// module.exports.findSeason = async function(id, showId) {
+//   try {
+//     if (!req.body.id) throw "Please provide id!";
+//     if (!req.body.showId) throw "Please provide id to show";
+
+//     const season = await Season.findOne({
+//       where : {
+//         [Op.and] : [
+//           {id: Number.parseInt(req.body.id)} ,
+//           {showId: Number.parseInt(req.body.showId)}
+//         ]
+//       }
+//     });
+
+//     return season;
+
+//   } catch(err) {
+//     return null;
+//   }
+
+// }
