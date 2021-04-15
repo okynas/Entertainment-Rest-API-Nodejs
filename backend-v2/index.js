@@ -1,6 +1,6 @@
 // const fs = require("fs");
 const http = require('http');
-const https = require('https');
+// const https = require('https');
 const express = require("express");
 const session = require("express-session");
 const helmet = require('helmet');
@@ -30,19 +30,19 @@ app.use(session({
   }
 }));
 
-// app.get("/", (req, res, next) => {
-//   res.status(200).
-//   json({
-//       status: 200,
-//       message: "Welcome to OKYNAS.no 😎"
-//   })
-// })
-
 app.use("/api", require("./api"));
+
+app.get("*", (req, res, next) => {
+  res.status(404).json({
+    status: 404,
+    status_type: "Not found",
+    message: "This page was not found!",
+    url: req.url
+  })
+})
 
 // https.createServer(key, app)
 //   .listen(HTTPS_PORT, () => console.log(`Example app listening on port ${HTTPS_PORT}! Go to https://localhost:${HTTPS_PORT}/`) );
 
 http.createServer(app)
   .listen(HTTP_PORT, () => console.log(`Example app listening on port ${HTTP_PORT}! Go to https://localhost:${HTTP_PORT}/`) );
-

@@ -149,12 +149,17 @@ router.get("/profile", authentication, async (req, res, next) => {
   }
 });
 
-// ####################################
-// Login
-// ####################################
+// ==============================>>
+//              Login
+// ==============================>>
 
 router.post("/login", alreadyLoggedIn, userExist, async (req, res, next) => {
   try {
+
+    if (!req.body.username) throw "Please provide username";
+    if (!req.body.email) throw "Please provide email";
+    if (!req.body.password) throw "Please provide password";
+
     const userToCheck = await findUserAndLogIn(req.body.username, req.body.email, req.body.password);
     const token = createAccessToken(userToCheck);
 
@@ -177,9 +182,9 @@ router.post("/login", alreadyLoggedIn, userExist, async (req, res, next) => {
   }
 });
 
-// ####################################
-// Signup
-// ####################################
+// ==============================>>
+//              Signup
+// ==============================>>
 router.post("/signup", alreadyLoggedIn, async (req, res, next) => {
 
   try {
@@ -213,9 +218,9 @@ router.post("/signup", alreadyLoggedIn, async (req, res, next) => {
 
 });
 
-// ####################################
-// Logout
-// ####################################
+// ==============================>>
+//              Logout
+// ==============================>>
 
 router.post("/logout", (req, res, next) => {
   try {
@@ -239,9 +244,9 @@ router.post("/logout", (req, res, next) => {
 
 });
 
-// ####################################
-// Roles
-// ####################################
+// ==============================>>
+//              Roles
+// ==============================>>
 
 router.get("/roles", authentication, isStaff, async (req, res, next) => {
 

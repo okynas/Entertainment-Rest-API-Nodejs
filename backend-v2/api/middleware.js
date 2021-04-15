@@ -88,8 +88,12 @@ module.exports.checkPermissionToOneUser = async function(username) {
 }
 
 module.exports.userExist = async function(req, res, next) {
-
   try {
+
+    if (!req.body.username) throw "Please provide username";
+    if (!req.body.email) throw "Please provide email";
+    if (!req.body.password) throw "Please provide password";
+
     const key = crypto.pbkdf2Sync(req.body.password, process.env.PWD_HASH_SALT, Number(process.env.PWD_HASH_ITERATION), Number(process.env.PWD_HASH_LENGTH), process.env.PWD_HASH_ALGORITHM);
     const userToCheck = await User.findOne({
       where: {
@@ -110,7 +114,8 @@ module.exports.userExist = async function(req, res, next) {
   catch(err) {
     return res.status(404).json({
       status: 404,
-      error: err
+      status_type: "Not found",
+      error: String(err)
     })
   }
 
