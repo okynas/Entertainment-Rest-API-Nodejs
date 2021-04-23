@@ -1,29 +1,29 @@
-const {authentication, isStaff, checkGenreInFilm} = require("../middleware");
+const {authentication, isStaff} = require("../middleware");
 const sequelize = require("../../db/db.config");
-const Film = sequelize.Film;
-const Genre = sequelize.Genre;
-const GenreInFilm = sequelize.Film_has_genre;
+const Show = sequelize.Show;
+const Actor = sequelize.Actor;
+const ActorsInShow = sequelize.Show_has_actors;
 
 const express = require("express");
 const { Op } = require("sequelize");
 const router = express.Router();
 
 // ==============================>>
-//         GENRE IN FILM
+//         ACTOR IN SHOW
 // ==============================>>
 
 router.get("/", async (req, res, next) => {
 
   try {
-    const GiF = await GenreInFilm.findAll();
+    const AiS = await ActorsInShow.findAll();
 
-    if (!GiF || GiF.length === 0) throw "genre in films not found"
+    if (!AiS || AiS.length === 0) throw "films not found"
 
     return res.status(200).json({
       status: 200,
       status_type: "OK",
-      message: "Retrieving all genre in films ✨",
-      actorsInFilm: GiF
+      message: "Retrieving all actors in show ✨",
+      actorsInShow: AiS
     });
   }
   catch (err) {
@@ -40,35 +40,37 @@ router.get("/", async (req, res, next) => {
 router.post("/", authentication, isStaff,  async (req, res, next) => {
   try {
 
-    if (!req.body.filmId) throw "Please provide film id!";
-    if (!req.body.genreId) throw "Please provide actor id!";
+    if (!req.body.showId) throw "Please provide show id!";
+    if (!req.body.actorId) throw "Please provide actor id!";
+    if (!req.body.role) throw "Please provide role!";
 
-    const gif = await GenreInFilm.findOne({
+    const aif = await ActorsInShow.findOne({
       where: {
         [Op.and] :[
-          { filmId: req.body.filmId },
-          { genreId: req.body.genreId },
+          { showId: req.body.showId },
+          { actorId: req.body.actorId },
         ]
       }
     });
 
-    const genre = await Genre.findByPk(req.body.genreId)
-    const film = await Film.findByPk(req.body.filmId)
+    if (aif) throw "Can't add actor to film, that combination already exist!";
 
-    if (gif) throw "Can't add actor to film, that combination already exist!";
-    if (!genre) throw "could not fetch genre"
-    if (!film) throw "could not fetch film"
+    const actor = await Actor.findByPk(req.body.actorId)
+    const show = await Show.findByPk(req.body.showId)
 
-    await GenreInFilm.create({
-      "filmId": Number(film.id),
-      "genreId": Number(genre.id),
+    if (!actor) throw "could not fetch actor"
+    if (!show) throw "could not fetch show"
+
+    await ActorsInShow.create({
+      "showId": Number(req.body.showId),
+      "role": req.body.role,
+      "actorId": Number(req.body.actorId),
     });
-
 
     return res.status(200).json({
       status: 201,
       status_type: "Created",
-      message: "Successfully added genre to film!",
+      message: "Successfully added actor to show!",
     });
   }
   catch(err) {
@@ -129,39 +131,25 @@ router.post("/", authentication, isStaff,  async (req, res, next) => {
 router.delete("/", authentication, isStaff, async (req, res, next) => {
   try {
 
-    // if (!req.body.id) throw "Please provide id!";
-
-    // const film = await Film.findOne({ where: { id: req.body.id } });
-
-    // if (!film) throw "Can't delete film, it already exists!";
-
-    // await Film.destroy({ where :{id: req.body.id} });
-
-    // return res.status(200).json({
-    //   status: 201,
-    //   status_type: "Created",
-    //   message: "Successfully deleted film!",
-    // });
-
     if (!req.body.filmId) throw "Please provide film id!";
-    if (!req.body.genreId) throw "Please provide actor id!";
+    if (!req.body.actorId) throw "Please provide actor id!";
 
-    const gif = await GenreInFilm.findOne({
+    const aif = await ActorsInFilm.findOne({
       where: {
         [Op.and] :[
           { filmId: req.body.filmId },
-          { genreId: req.body.genreId },
+          { actorId: req.body.actorId },
         ]
       }
     });
 
-    if (!gif) throw "Can't add actor to film, that combination does not exist!";
+    if (!aif) throw "Can't add actor to film, that combination does not exist!";
 
-    await GenreInFilm.destroy({ where :
+    await ActorsInFilm.destroy({ where :
       {
         [Op.and] : [
           {filmId: req.body.filmId},
-          {genreId: req.body.genreId}
+          {actorId: req.body.actorId}
         ]
       }
     });
@@ -169,7 +157,7 @@ router.delete("/", authentication, isStaff, async (req, res, next) => {
     return res.status(200).json({
       status: 201,
       status_type: "Created",
-      message: "Successfully removed genre to that film!",
+      message: "Successfully removed actor to that film!",
     });
   }
   catch(err) {

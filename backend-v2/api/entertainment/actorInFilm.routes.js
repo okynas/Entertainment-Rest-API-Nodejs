@@ -9,7 +9,7 @@ const { Op } = require("sequelize");
 const router = express.Router();
 
 // ==============================>>
-//            FILM
+//         ACTOR IN FILM
 // ==============================>>
 
 router.get("/", async (req, res, next) => {
@@ -22,7 +22,7 @@ router.get("/", async (req, res, next) => {
     return res.status(200).json({
       status: 200,
       status_type: "OK",
-      message: "Retrieving all films ✨",
+      message: "Retrieving all actors films ✨",
       actorsInFilm: AiF
     });
   }
@@ -56,7 +56,13 @@ router.post("/", authentication, isStaff,  async (req, res, next) => {
 
     if (aif) throw "Can't add actor to film, that combination already exist!";
 
-    const c = await ActorsInFilm.create({
+    const actor = await Actor.findByPk(req.body.actorId)
+    const film = await Film.findByPk(req.body.filmId)
+
+    if (!actor) throw "could not fetch actor"
+    if (!film) throw "could not fetch film"
+
+    await ActorsInFilm.create({
       "filmId": Number(req.body.filmId),
       "role": req.body.role,
       "actorId": Number(req.body.actorId),
@@ -66,7 +72,6 @@ router.post("/", authentication, isStaff,  async (req, res, next) => {
       status: 201,
       status_type: "Created",
       message: "Successfully added actor to film!",
-      c
     });
   }
   catch(err) {

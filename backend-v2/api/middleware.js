@@ -267,24 +267,32 @@ module.exports.findEpisode = async function(title, showId, seasonId) {
 
 }
 
-// module.exports.findSeason = async function(id, showId) {
+// module.exports.checkGenreInFilm = async function(filmId, genreId) {
 //   try {
-//     if (!req.body.id) throw "Please provide id!";
-//     if (!req.body.showId) throw "Please provide id to show";
-
-//     const season = await Season.findOne({
-//       where : {
-//         [Op.and] : [
-//           {id: Number.parseInt(req.body.id)} ,
-//           {showId: Number.parseInt(req.body.showId)}
+//     if (!filmId) throw "Please provide film id!";
+//     if (!genreId) throw "Please provide actor id!";
+  
+//     const gif = await GenreInFilm.findOne({
+//       where: {
+//         [Op.and] :[
+//           { filmId: filmId},
+//           { genreId: genreId},
 //         ]
 //       }
 //     });
 
-//     return season;
+//     // if (gif) throw "there is a film-genre combination"
+  
+//     const genre = await Genre.findByPk(genreId)
+//     const film = await Film.findByPk(filmId)
 
-//   } catch(err) {
-//     return null;
+//     if (!genre) throw "could not find genre"
+//     if (!film) throw "could not find film"
+
+//     return Object.assign({film: film, genre: genre})
+//   }
+//   catch(err) {
+//     return String(err)
 //   }
 
 // }
