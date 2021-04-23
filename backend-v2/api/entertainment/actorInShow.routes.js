@@ -131,24 +131,24 @@ router.post("/", authentication, isStaff,  async (req, res, next) => {
 router.delete("/", authentication, isStaff, async (req, res, next) => {
   try {
 
-    if (!req.body.filmId) throw "Please provide film id!";
+    if (!req.body.showId) throw "Please provide show id!";
     if (!req.body.actorId) throw "Please provide actor id!";
 
-    const aif = await ActorsInFilm.findOne({
+    const aif = await ActorsInShow.findOne({
       where: {
         [Op.and] :[
-          { filmId: req.body.filmId },
+          { showId: req.body.showId },
           { actorId: req.body.actorId },
         ]
       }
     });
 
-    if (!aif) throw "Can't add actor to film, that combination does not exist!";
+    if (!aif) throw "Can't add actor to show, that combination does not exist!";
 
-    await ActorsInFilm.destroy({ where :
+    await ActorsInShow.destroy({ where :
       {
         [Op.and] : [
-          {filmId: req.body.filmId},
+          {showId: req.body.showId},
           {actorId: req.body.actorId}
         ]
       }
@@ -157,7 +157,7 @@ router.delete("/", authentication, isStaff, async (req, res, next) => {
     return res.status(200).json({
       status: 201,
       status_type: "Created",
-      message: "Successfully removed actor to that film!",
+      message: "Successfully removed actor to that show!",
     });
   }
   catch(err) {

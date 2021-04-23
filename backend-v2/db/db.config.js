@@ -281,7 +281,7 @@ const Show_has_genre = sequelize.define("show_has_genre", {
   showId:{
     type: Sequelize.BIGINT(15),
     references: {
-      model: Film,
+      model: Show,
       key: 'id'
     }
   },
@@ -365,11 +365,15 @@ Film.belongsTo(Language, {foreignKey: "languageId", as: "language"});
 Language.hasMany(Film, {as: "filmLanguage"});
 
 // SHOW
-Show.belongsToMany(Actor, { as: 'Actors', through: {model: Show_has_actors, unique: false}, foreignKey: 'actorId'});
-Actor.belongsToMany(Show, { as: 'Show', through: {model: Show_has_actors, unique: false}, foreignKey: 'showId'});
+Show.belongsToMany(Actor, { as: 'Actors', through: {model: Show_has_actors, unique: false}, foreignKey: 'showId', constraints: false});
+Actor.belongsToMany(Show, { as: 'Show', through: {model: Show_has_actors, unique: false}, foreignKey: 'actorId', constraints: false});
 
-Show.belongsToMany(Genre, { as: 'Genre', through: {model: Show_has_genre, unique: false}, foreignKey: 'genreId'});
-Genre.belongsToMany(Show, { as: 'Show', through: {model: Show_has_genre, unique: false}, foreignKey: 'showId'});
+// Show.belongsToMany(Genre, { as: 'Genre', through: {model: Show_has_genre, unique: false}, foreignKey: 'showId', constraints: false});
+// Genre.belongsToMany(Show, { as: 'Show', through: {model: Show_has_genre, unique: false}, foreignKey: 'genreId', constraints: false});
+
+Show.belongsToMany(Genre, { as: 'Genre', through: {model: Show_has_genre, unique: false}, foreignKey: 'showId', constraints: false});
+Genre.belongsToMany(Show, { as: 'Show', through: {model: Show_has_genre, unique: false}, foreignKey: 'genreId', constraints: false});
+
 
 Show.belongsTo(Language, {foreignKey: "languageId", as: "language"});
 Language.hasMany(Show, {as: "showLanguage"});
@@ -489,7 +493,7 @@ sequelize.sync({fouce: true})
 
   // Show_has_genre.create({
   //   "showId": 1,
-  //   "genreId": 1,
+  //   "genreId": 2,
   // });
 
   console.log("Database & tables created!")

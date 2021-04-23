@@ -1,8 +1,8 @@
 const {authentication, isStaff} = require("../middleware");
 const sequelize = require("../../db/db.config");
-const Film = sequelize.Film;
+const Show = sequelize.Show;
 const Genre = sequelize.Genre;
-const GenreInFilm = sequelize.Film_has_genre;
+const GenreInShow = sequelize.Show_has_genre;
 
 const express = require("express");
 const { Op } = require("sequelize");
@@ -15,15 +15,15 @@ const router = express.Router();
 router.get("/", async (req, res, next) => {
 
   try {
-    const GiF = await GenreInFilm.findAll();
+    const GiS = await GenreInShow.findAll();
 
-    if (!GiF || GiF.length === 0) throw "genre in films not found"
+    if (!GiS || GiS.length === 0) throw "genre in shows not found"
 
     return res.status(200).json({
       status: 200,
       status_type: "OK",
-      message: "Retrieving all genre in films ✨",
-      genreInFilm: GiF
+      message: "Retrieving all genre in shows ✨",
+      genreInShow: GiS
     });
   }
   catch (err) {
@@ -37,33 +37,32 @@ router.get("/", async (req, res, next) => {
 
 });
 
-router.post("/", authentication, isStaff,  async (req, res, next) => {
+router.post("/", authentication, isStaff, async (req, res, next) => {
   try {
 
-    if (!req.body.filmId) throw "Please provide film id!";
+    if (!req.body.showId) throw "Please provide show id!";
     if (!req.body.genreId) throw "Please provide actor id!";
 
-    const gif = await GenreInFilm.findOne({
+    const gif = await GenreInShow.findOne({
       where: {
         [Op.and] :[
-          { filmId: req.body.filmId },
+          { showId: req.body.showId },
           { genreId: req.body.genreId },
         ]
       }
     });
 
     const genre = await Genre.findByPk(req.body.genreId)
-    const film = await Film.findByPk(req.body.filmId)
+    const show = await Show.findByPk(req.body.showId)
 
     if (gif) throw "Can't add actor to film, that combination already exist!";
     if (!genre) throw "could not fetch genre"
-    if (!film) throw "could not fetch film"
+    if (!show) throw "could not fetch show"
 
-    await GenreInFilm.create({
-      "filmId": Number(film.id),
+    await GenreInShow.create({
+      "showId": Number(show.id),
       "genreId": Number(genre.id),
     });
-
 
     return res.status(200).json({
       status: 201,
@@ -129,38 +128,25 @@ router.post("/", authentication, isStaff,  async (req, res, next) => {
 router.delete("/", authentication, isStaff, async (req, res, next) => {
   try {
 
-    // if (!req.body.id) throw "Please provide id!";
 
-    // const film = await Film.findOne({ where: { id: req.body.id } });
-
-    // if (!film) throw "Can't delete film, it already exists!";
-
-    // await Film.destroy({ where :{id: req.body.id} });
-
-    // return res.status(200).json({
-    //   status: 201,
-    //   status_type: "Created",
-    //   message: "Successfully deleted film!",
-    // });
-
-    if (!req.body.filmId) throw "Please provide film id!";
+    if (!req.body.showId) throw "Please provide show id!";
     if (!req.body.genreId) throw "Please provide actor id!";
 
-    const gif = await GenreInFilm.findOne({
+    const gif = await GenreInShow.findOne({
       where: {
         [Op.and] :[
-          { filmId: req.body.filmId },
+          { showId: req.body.showId },
           { genreId: req.body.genreId },
         ]
       }
     });
 
-    if (!gif) throw "Can't add actor to film, that combination does not exist!";
+    if (!gif) throw "Can't add genre to show, that combination does not exist!";
 
-    await GenreInFilm.destroy({ where :
+    await GenreInShow.destroy({ where :
       {
         [Op.and] : [
-          {filmId: req.body.filmId},
+          {showId: req.body.showId},
           {genreId: req.body.genreId}
         ]
       }
@@ -169,7 +155,7 @@ router.delete("/", authentication, isStaff, async (req, res, next) => {
     return res.status(200).json({
       status: 201,
       status_type: "Created",
-      message: "Successfully removed genre to that film!",
+      message: "Successfully removed genre to that show!",
     });
   }
   catch(err) {
