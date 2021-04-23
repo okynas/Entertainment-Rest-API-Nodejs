@@ -15,6 +15,7 @@ const router = express.Router();
 router.get("/", async (req, res, next) => {
 
   try {
+
     const films = await Film.findAll({
       attributes: ['id', 'title', 'poster', 'description','releasedate', 'trailer'],
       include: [

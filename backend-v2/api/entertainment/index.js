@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 router.use("/actorsinfilms", require("./actorInFilm.routes"))
+router.use("/genreinfilms", require("./genreInFilm.routes"))
 router.use("/episodes", require("./episode.routes"));
 router.use("/season", require("./season.routes"));
 router.use("/film", require("./film.routes"));

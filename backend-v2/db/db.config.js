@@ -257,6 +257,7 @@ const Film_has_genre = sequelize.define("film_has_genre", {
 
 const Show_has_actors = sequelize.define("show_has_actors", {
   actorId: {
+    allowNull: false,
     type: Sequelize.BIGINT(15),
     references: {
       model: Actor,
@@ -264,6 +265,7 @@ const Show_has_actors = sequelize.define("show_has_actors", {
     }
   },
   showId:{
+    allowNull: false,
     type: Sequelize.BIGINT(15),
     references: {
       model: Film,
@@ -353,11 +355,11 @@ const Episode = sequelize.define("episodes", {
 // ======== >= <= ========
 
 // FILM
-Film.belongsToMany(Actor, { as: 'Actors', through: {model: Film_has_actors, unique: false}, foreignKey: 'actorId'});
-Actor.belongsToMany(Film, { as: 'Film', through: {model: Film_has_actors, unique: false}, foreignKey: 'filmId'});
+Film.belongsToMany(Actor, { as: 'Actors', through: {model: Film_has_actors, unique: false}, foreignKey: 'filmId', constraints: false});
+Actor.belongsToMany(Film, { as: 'Film', through: {model: Film_has_actors, unique: false}, foreignKey: 'actorId', constraints: false});
 
-Film.belongsToMany(Genre, { as: 'Genre', through: {model: Film_has_genre, unique: false}, foreignKey: 'genreId'});
-Genre.belongsToMany(Film, { as: 'Film', through: {model: Film_has_genre, unique: false}, foreignKey: 'filmId'});
+Film.belongsToMany(Genre, { as: 'Genre', through: {model: Film_has_genre, unique: false}, foreignKey: 'filmId', constraints: false});
+Genre.belongsToMany(Film, { as: 'Film', through: {model: Film_has_genre, unique: false}, foreignKey: 'genreId', constraints: false});
 
 Film.belongsTo(Language, {foreignKey: "languageId", as: "language"});
 Language.hasMany(Film, {as: "filmLanguage"});
@@ -438,7 +440,6 @@ sequelize.sync({fouce: true})
   //   "releasedate": Date.now(),
   //   "trailer": "https://www.google.com",
   //   "languageId": 1,
-  //   "genreId": 1,
   // });
 
   // Show.create({
@@ -449,7 +450,6 @@ sequelize.sync({fouce: true})
   //   "releasedate": Date.now(),
   //   "trailer": "https://www.google.com",
   //   "languageId": 1,
-  //   "genreId": 1,
   // });
 
   // Season.create({

@@ -1,8 +1,8 @@
 const {authentication, isStaff} = require("../middleware");
 const sequelize = require("../../db/db.config");
 const Film = sequelize.Film;
-const Actor = sequelize.Actor;
-const ActorsInFilm = sequelize.Film_has_actors;
+const Genre = sequelize.Genre;
+const GenreInFilm = sequelize.Film_has_genre;
 
 const express = require("express");
 const { Op } = require("sequelize");
@@ -15,15 +15,15 @@ const router = express.Router();
 router.get("/", async (req, res, next) => {
 
   try {
-    const AiF = await ActorsInFilm.findAll();
+    const GiF = await GenreInFilm.findAll();
 
-    if (!AiF || AiF.length === 0) throw "films not found"
+    if (!GiF || GiF.length === 0) throw "genre in films not found"
 
     return res.status(200).json({
       status: 200,
       status_type: "OK",
-      message: "Retrieving all films ✨",
-      actorsInFilm: AiF
+      message: "Retrieving all genre in films ✨",
+      actorsInFilm: GiF
     });
   }
   catch (err) {
@@ -41,32 +41,37 @@ router.post("/", authentication, isStaff,  async (req, res, next) => {
   try {
 
     if (!req.body.filmId) throw "Please provide film id!";
-    if (!req.body.actorId) throw "Please provide actor id!";
-    if (!req.body.role) throw "Please provide role!";
+    if (!req.body.genreId) throw "Please provide actor id!";
 
-    const aif = await ActorsInFilm.findOne({
+    const gif = await GenreInFilm.findOne({
       where: {
         [Op.and] :[
           { filmId: req.body.filmId },
-          { role: req.body.role },
-          { actorId: req.body.actorId },
+          { genreId: req.body.genreId },
         ]
       }
     });
 
-    if (aif) throw "Can't add actor to film, that combination already exist!";
+    const genre = await Genre.findByPk(req.body.genreId)
+    const film = await Film.findByPk(req.body.filmId)
 
-    const c = await ActorsInFilm.create({
-      "filmId": Number(req.body.filmId),
-      "role": req.body.role,
-      "actorId": Number(req.body.actorId),
+    if (gif) throw "Can't add actor to film, that combination already exist!";
+
+    // return res.json({
+    //   filmID: film.id,
+    //   genreID: genre.id
+    // })
+
+    await GenreInFilm.create({
+      "filmId": Number(film.id),
+      "genreId": Number(genre.id),
     });
+
 
     return res.status(200).json({
       status: 201,
       status_type: "Created",
-      message: "Successfully added actor to film!",
-      c
+      message: "Successfully added genre to film!",
     });
   }
   catch(err) {
@@ -127,25 +132,39 @@ router.post("/", authentication, isStaff,  async (req, res, next) => {
 router.delete("/", authentication, isStaff, async (req, res, next) => {
   try {
 
-    if (!req.body.filmId) throw "Please provide film id!";
-    if (!req.body.actorId) throw "Please provide actor id!";
+    // if (!req.body.id) throw "Please provide id!";
 
-    const aif = await ActorsInFilm.findOne({
+    // const film = await Film.findOne({ where: { id: req.body.id } });
+
+    // if (!film) throw "Can't delete film, it already exists!";
+
+    // await Film.destroy({ where :{id: req.body.id} });
+
+    // return res.status(200).json({
+    //   status: 201,
+    //   status_type: "Created",
+    //   message: "Successfully deleted film!",
+    // });
+
+    if (!req.body.filmId) throw "Please provide film id!";
+    if (!req.body.genreId) throw "Please provide actor id!";
+
+    const gif = await GenreInFilm.findOne({
       where: {
         [Op.and] :[
           { filmId: req.body.filmId },
-          { actorId: req.body.actorId },
+          { genreId: req.body.genreId },
         ]
       }
     });
 
-    if (!aif) throw "Can't add actor to film, that combination does not exist!";
+    if (!gif) throw "Can't add actor to film, that combination does not exist!";
 
-    await ActorsInFilm.destroy({ where :
+    await GenreInFilm.destroy({ where :
       {
         [Op.and] : [
           {filmId: req.body.filmId},
-          {actorId: req.body.actorId}
+          {genreId: req.body.genreId}
         ]
       }
     });
@@ -153,7 +172,7 @@ router.delete("/", authentication, isStaff, async (req, res, next) => {
     return res.status(200).json({
       status: 201,
       status_type: "Created",
-      message: "Successfully removed actor to that film!",
+      message: "Successfully removed genre to that film!",
     });
   }
   catch(err) {
