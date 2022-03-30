@@ -1,20 +1,20 @@
 const Sequelize = require("sequelize");
 
-// const sequelize = new Sequelize(
-//   "test_db",
-//   "admin",
-//   "admin", {
-//     dialect: "mysql",
-//     host: "mysql"
-//   }
-// );
+const sequelize = new Sequelize(
+  "test_db",
+  "admin",
+  "admin", {
+    dialect: "mysql",
+    host: "mysql"
+  }
+);
 
 // const sequelize = new Sequelize("sqlite::memory:");
 // Option 2: Passing parameters separately (sqlite)
-const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: '../database.sqlite'
-});
+// const sequelize = new Sequelize({
+//   dialect: 'sqlite',
+//   storage: '../database.sqlite'
+// });
 
 sequelize
   .authenticate()
@@ -139,6 +139,7 @@ const Film = sequelize.define("film", {
   id: {
     type: Sequelize.BIGINT(15),
     primaryKey: true,
+    unique: true
   },
   title: {
     type: Sequelize.STRING,
@@ -368,12 +369,8 @@ Language.hasMany(Film, {as: "filmLanguage"});
 Show.belongsToMany(Actor, { as: 'Actors', through: {model: Show_has_actors, unique: false}, foreignKey: 'showId', constraints: false});
 Actor.belongsToMany(Show, { as: 'Show', through: {model: Show_has_actors, unique: false}, foreignKey: 'actorId', constraints: false});
 
-// Show.belongsToMany(Genre, { as: 'Genre', through: {model: Show_has_genre, unique: false}, foreignKey: 'showId', constraints: false});
-// Genre.belongsToMany(Show, { as: 'Show', through: {model: Show_has_genre, unique: false}, foreignKey: 'genreId', constraints: false});
-
 Show.belongsToMany(Genre, { as: 'Genre', through: {model: Show_has_genre, unique: false}, foreignKey: 'showId', constraints: false});
 Genre.belongsToMany(Show, { as: 'Show', through: {model: Show_has_genre, unique: false}, foreignKey: 'genreId', constraints: false});
-
 
 Show.belongsTo(Language, {foreignKey: "languageId", as: "language"});
 Language.hasMany(Show, {as: "showLanguage"});
@@ -386,116 +383,6 @@ Season.hasMany(Episode, {as: 'episodes'});
 
 sequelize.sync({fouce: true})
 .then( () => {
-  // Role.create({
-  //   "id": 1,
-  //   "name": "User",
-  //   "level": 1
-  // });
-  // Role.create({
-  //   "id": 2,
-  //   "name": "Moderator",
-  //   "level": 2
-  // });
-  // Role.create({
-  //   "id": 3,
-  //   "name": "Admin",
-  //   "level": 3
-  // });
-  // User.create({
-  //  "username": "admin",
-  //  "email": "admin@gmail.com",
-  //  "first_name": "stian",
-  //  "last_name": "martinsen",
-  //  "gender": "Male",
-  //  "password": "d8da308ccd0cf4c331521fc8f8771507e65e9981de1959e0c76e035291024b1e6b18b9623f751acb470e2b38506066e216a5259f530817674f19f24501ca10342536df7bc27901001890b87e429007d6e5e4a937776d44145a9df54631fde19a6aa5baf9c9fe",
-  //  "createdAt": "2021-03-26T19:24:11.910Z",
-  //  "updatedAt": "2021-03-26T19:24:11.911Z",
-  //  "roleId": 3
-  // });
-
-  // Actor.create({
-  //   "id": 1,
-  //   "first_name": "Stian",
-  //   "last_name": "Martinsen",
-  //   "bio": "HI' im me 🔥",
-  //   "birthdate": Date.now()
-  // });
-
-  // Language.create({
-  //   "id": 1,
-  //   "language": "English"
-  // });
-
-  // Genre.create({
-  //   "id": 1,
-  //   "genre": "Action"
-  // });
-
-  // Genre.create({
-  //   "id": 2,
-  //   "genre": "Comedy"
-  // });
-
-  // Film.create({
-  //   "id": 1,
-  //   "title": "Game of Thrones",
-  //   "poster": "POSTER",
-  //   "description": "A very good show",
-  //   "releasedate": Date.now(),
-  //   "trailer": "https://www.google.com",
-  //   "languageId": 1,
-  // });
-
-  // Show.create({
-  //   "id": 1,
-  //   "title": "Game of Thrones",
-  //   "poster": "POSTER",
-  //   "description": "A very good show",
-  //   "releasedate": Date.now(),
-  //   "trailer": "https://www.google.com",
-  //   "languageId": 1,
-  // });
-
-  // Season.create({
-  //   id: 1,
-  //   title: "Season 1",
-  //   releasedate: Date.now(),
-  //   description: "beskrivelse",
-  //   showId: 1,
-  // });
-
-  // Episode.create({
-  //   id: 1,
-  //   title: "Episode 1",
-  //   releasedate: Date.now(),
-  //   description: "beskrivelse",
-  //   length: 155,
-  //   showId: 1,
-  //   seasonId: 1,
-  // });
-
-  // Film_has_actors.create({
-  //   "filmId": 1,
-  //   "actorId": 1,
-  //   "role": "Jon Snow"
-  // });
-
-  // Film_has_genre.create({
-  //   "filmId": 1,
-  //   "genreId": 1,
-  // });
-
-  // Show_has_actors.create({
-  //   "showId": 1,
-  //   "actorId": 1,
-  //   "role": "Jon Snow"
-  // });
-
-  // Show_has_genre.create({
-  //   "showId": 1,
-  //   "genreId": 2,
-  // });
-
   console.log("Database & tables created!")
 });
 

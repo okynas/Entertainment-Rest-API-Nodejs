@@ -45,6 +45,13 @@ services:
       - mysql
     ports:
       - 8000:8000
+  # fast-api:
+  #   build: ./backend-fastapi
+  #   command: uvicorn app.main:app --host 0.0.0.0
+  #   volumes:
+  #     - .:/app
+  #   ports:
+  #     - 8001:8002
   # react - frontend
   # react-ui:
   #   build:
