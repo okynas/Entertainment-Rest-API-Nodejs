@@ -60,35 +60,36 @@ router.get("/:name", async (req, res, next) => {
   });
 
 router.post("/", authentication, async (req, res, next) => {
-    try {
-      if (!req.body.first_name) throw "Please supply with firstname to create actor";
-      if (!req.body.last_name) throw "Please supply with lastname to create actor";
+  try {
+    if (!req.body.first_name) throw "Please supply with firstname to create actor";
+    if (!req.body.last_name) throw "Please supply with lastname to create actor";
 
-      const findActor = await FindOneActor(req.body.first_name, req.body.last_name);
+    const findActor = await FindOneActor(req.body.first_name, req.body.last_name);
 
-      if (findActor) throw "Can't create actor. Actor already exists!";
+    if (findActor) throw "Can't create actor. Actor already exists!";
 
-      await Actor.create({
-        first_name: req.body.first_name,
-        last_name: req.body.last_name,
-        bio: req.body.bio,
-        birthdate: Date.parse(req.body.birthdate) || Date.now()
-      });
+    await Actor.create({
+      id: Date.now(),
+      first_name: req.body.first_name,
+      last_name: req.body.last_name,
+      bio: req.body.bio,
+      birthdate: Date.parse(req.body.birthdate) || Date.now()
+    });
 
-      return res.status(201).json({
-        status: 201,
-        status_type: "Created",
-        message: "Successfully created actor",
-      });
-    }
-    catch (err) {
-      return res.status(400).json({
-        status: 400,
-        message: "Error",
-        error: String(err)
-      })
-    }
-  });
+    return res.status(201).json({
+      status: 201,
+      status_type: "Created",
+      message: "Successfully created actor",
+    });
+  }
+  catch (err) {
+    return res.status(400).json({
+      status: 400,
+      message: "Error",
+      error: String(err)
+    })
+  }
+});
 
 router.put("/", authentication, isStaff, async (req, res, next) => {
     try {

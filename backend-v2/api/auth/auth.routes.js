@@ -188,12 +188,20 @@ router.post("/login", alreadyLoggedIn, userExist, async (req, res, next) => {
 router.post("/signup", alreadyLoggedIn, async (req, res, next) => {
 
   try {
+    if (!req.body.username) throw "Please provide username";
+    if (!req.body.email) throw "Please provide email";
+    if (!req.body.password) throw "Please provide password";
+
+    if (!req.body.first_name) throw "Please provide firstname";
+    if (!req.body.last_name) throw "Please provide lastname";
+    if (!req.body.gender) throw "Please provide gender";
     const existingUser = await findUser(req.body.username)
 
     if (existingUser) throw "Can't create user, already exists";
 
     const password = crypto.pbkdf2Sync(req.body.password, process.env.PWD_HASH_SALT, Number(process.env.PWD_HASH_ITERATION), Number(process.env.PWD_HASH_LENGTH), process.env.PWD_HASH_ALGORITHM);
     const createdUser = await User.create({
+      "id": Date.UTC(),
       "username": req.body.username,
       "email": req.body.email,
       "first_name": req.body.first_name,

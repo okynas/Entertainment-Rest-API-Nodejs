@@ -6,6 +6,7 @@ x-common-variables: &common-variables
   MYSQL_PASSWORD: admin
   MYSQL_DATABASE: test_db
   SERVER_PORT: 8000
+  HTTP_PORT : 5052
   MYSQL_DIALECT: mysql
   MYSQL_HOST: mysql
   TOKEN_SECRET: a8db712c5129e52c669d8599d982f071569b425519c638dcfd4ea87f8ba769232336cda2ee4bcd5d13f77b7cfb8d73d01ba0
@@ -44,7 +45,7 @@ services:
     links:
       - mysql
     ports:
-      - 8000:8000
+      - 5052:5052
   # fast-api:
   #   build: ./backend-fastapi
   #   command: uvicorn app.main:app --host 0.0.0.0

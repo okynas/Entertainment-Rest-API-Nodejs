@@ -14,7 +14,7 @@ const dotenv = require('dotenv').config();
 // };
 
 const app = express();
-const HTTP_PORT = process.env.HTTP_PORT || 8001;
+const HTTP_PORT = process.env.HTTP_PORT;
 // const HTTPS_PORT = process.env.HTTPS_PORT || 8443;
 
 app.use(helmet());
@@ -29,6 +29,13 @@ app.use(session({
     // secure: true,
   }
 }));
+
+app.get("/", (req, res) => {
+  res.status(200).json({
+    status: 200,
+    message: "found"
+  })
+})
 
 app.use("/api", require("./api"));
 

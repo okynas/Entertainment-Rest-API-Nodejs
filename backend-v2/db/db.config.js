@@ -60,7 +60,7 @@ const User = sequelize.define("user_details", {
     }
   },
   gender: {
-    type: Sequelize.ENUM('Male', 'Frmale'),
+    type: Sequelize.ENUM('Male', 'Female'),
     allowNull: false,
     validate: {
       isIn: [['Male', 'Female']]
